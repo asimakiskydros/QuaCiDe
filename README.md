@@ -20,7 +20,8 @@ The UI offers a variety of user-friendly actions:
 * See circuit-relevant stats, like `#qubits`, `#gates`, `#steps`, on the live counters.
 * Export the current circuit layout as JSON by pressing the `Export` button or `CTRL + s`.
 * Import new circuit layout from valid JSON through the `Import` button.
-* Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z` or `CTRL + y` respectively.
+* Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z` or
+  `CTRL + y` respectively.
 * Press `Run Circuit` with measurement gates present to summon the execution modal.
 * Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.
 * Receive output as interactable and downloadable plots.
