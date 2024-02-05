@@ -6,7 +6,7 @@ The present product is still in development phase, therefore to access it you'll
 files in a controlled IDE environment that offers and/or supports servers for HTML execution.
 [Visual Studio Code](https://code.visualstudio.com/) running Live Server is recommended. Both
 [`base.html`](https://github.com/asimakiskydros/QuaCiDe/blob/main/base.html) and [`parser_script.py`](https://github.com/asimakiskydros/QuaCiDe/blob/main/parser_script.py)
-need to be running for the designer to be fully functional. Make sure Python 3 and all listed languages are supported from your system.
+need to be running for the designer to be fully functional. Make sure Python 3 and all listed languages are supported by your system.
 
 ## Usage
 The UI offers a variety of user-friendly actions:
