@@ -17,7 +17,7 @@ The UI offers a variety of user-friendly actions:
 * `Left-click` on the qubit states to shuffle among the standard starting states.
 * `Right-click` on the qubit states to shuffle between register colors. Neighboring register borders
   become unified into one.
-* See circuit-relevant stats, like `\#qubits`, `\#gates`, `\#steps`, on the live counters.
+* See circuit-relevant stats, like `#qubits`, `#gates`, `#steps`, on the live counters.
 * Export the current circuit layout as JSON by pressing the `Export` button or `CTRL + s`.
 * Import new circuit layout from valid JSON through the `Import` button.
 * Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z` or `CTRL + y` respectively.
