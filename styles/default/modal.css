@@ -1,0 +1,376 @@
+/*                  MODAL
+    Everything concerning the execution window,
+    including the 'Run Circuit' button.
+*/
+
+/* (False) Middle subsection of the toolbox.
+   Declared like this to use toolbox title-hr as a delimiter.
+ */
+ .execution-container {
+    position: relative;
+    margin-top: 50px;
+}
+
+/* (True) Middle subsection of the toolbox, containing the execution button.
+   Desc: invisible rectangle between the gate and help corners, marginalized
+         from the top and left.
+*/
+.run-button-container {
+    position: relative;
+    margin-top: 5px;
+    left: 5%;
+}
+
+/* Run Circuit button, summons modal.
+   Desc: 3/4 of the area of the parent container, same gray
+         background as the help buttons, same lettering,
+         much bigger size to emphasize importance.
+*/
+.run-button {
+    background-color: rgb(165, 159, 159);
+    color: black;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 180px;
+    height: 80px;
+    transition: border 0.2s;
+}
+
+/* Summon border on hover to indicate interactability.
+ */
+.run-button:hover {
+    border: 1px solid black;
+}
+
+/* Make button opaque and uninteractable when disabled.
+   Also change the cursor.
+*/
+.run-button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Mask above the main UI and below the modal UI.
+   Desc: Supercedes all interactables in main so they are
+         inoperable while the modal is active. Centers the
+         modal UI.
+*/
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Main modal UI .
+   Desc: Sizable white wide rectangle, centered.
+         Casts a gray shadow to highlight hierarchy.
+*/
+.modal-container {
+    position: relative;
+    background-color: white;
+    border-radius: 5px;
+    width: 700px;
+    height: 500px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Bottom section of the modal toolbox.
+   Desc: lightgray square, marginalized
+         from every side, positioned
+         on the bottom right of the modal.      
+*/
+.modal-buttons-container {
+    margin: 10px;
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    bottom: 0;
+    right: 0;
+    background-color: lightgray;
+}   
+
+/* Top row of divs.
+   Desc: centered, marginalized from the top and left.
+*/
+.modal-buttons-top-section {
+    position: relative;
+    margin-top: 10px;
+    left: 5%;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Bottom row of divs.
+   Desc: centered, lightly marginalized from the left
+         and heavily from the top.
+*/
+.modal-buttons-bottom-section {
+    position: relative;
+    margin-top: 85px;
+    left: 5%;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Modal toolbox buttons.
+   Desc: smaller but fairly identical copy
+         of the long help button.
+*/
+.modal-button {
+    background-color: rgb(165, 159, 159);
+    color: black;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 180px;
+    height: 45px;
+    transition: border 0.2s;
+}
+
+/* Summon border on hover to highlight interactability.
+*/
+.modal-button:hover{
+    border: 1px solid black;
+}
+
+/* Make button opaque and uninteractable when disabled.
+*/
+.modal-button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Top section of the modal toolbox.
+   Desc: long lightgray rectangle,
+         marginalized from every side.
+*/
+.modal-listboxes-container {
+    margin: 10px;
+    position: absolute;
+    width: 200px;
+    height: 280px;
+    top: 0;
+    right: 0;
+    background-color: lightgray;
+}
+
+/* Listbox texture.
+   Desc: wide curved rectangle, same shade as buttons,
+         no border.
+*/
+.modal-listbox {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    width: 180px;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    background-color: rgb(165, 159, 159);
+}
+
+/* Make listbox opaque and uninteractable when disabled.
+*/
+.modal-listbox[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Listbox droplist texture.
+*/
+.modal-listbox select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border: none;
+    outline: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: 'Times New Roman', Times, serif;
+    border-radius: 10px;
+}
+
+/* Listbox customization after selection.
+   Desc: custom pointing down arrow to 
+         highlight droplist support.
+*/
+.modal-listbox::after{
+    content: '⮟'; 
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+}
+
+/* Input box texture.
+   Desc: long rectangle, same shade as the buttons,
+         thin border starting with the same color
+         as buttons, small black letters in global font.
+*/
+.modal-textbox {
+    width: 175px;
+    height: 39px;
+    border-radius: 10px;
+    border: 1px solid rgb(165, 159, 159);
+    background-color: rgb(165, 159, 159);
+    font-size: 15px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+/* Make the textbox opaque and uninteractable when disabled.
+*/
+.modal-textbox[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Change the border color to black on click. 
+   Done like this because summoning the border otherwise
+   creates an undesired bobbing effect.
+*/
+.modal-textbox:focus {
+    border: 1px solid black;
+    outline: none;
+}
+
+/* Title for the many widgets present in the modal.
+   Desc: same sized letters as the buttons, black, bold.
+*/
+.modal-label {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+/* The remaining area of the modal, excluding the toolbox.
+   Desc: invisible quasi-square, left-justified, marginalized
+         from all sides.
+*/
+.modal-rest-container {
+    margin: 10px;
+    position: absolute;
+    width: 470px;
+    height: 480px;
+    top: 0;
+    left: 0;
+}
+
+/* Main area of the modal where the output prints.
+   Desc: big quasi-square with a starting lightgreen
+         background, thin black border, marginalized
+         from every side.
+*/
+.modal-output-container {
+    margin: 10px;
+    position: flex;
+    width: 450px;
+    max-width: 100%;
+    height: 380px;
+    top: 0;
+    left: 0;
+    background-color: rgb(204, 230, 204);
+    border: 1px solid black;
+}
+
+/* List of plot options that appears after execution.
+   Desc: starting invisible, marginalized from the top
+         and left, positioned just below the output container.
+*/
+.modal-options-section {
+    position: relative;
+    margin-top: 10px;
+    left: 40%;
+}
+
+/* Super-small option button.
+   Desc: mini version of the help buttons.
+*/
+.modal-option-button {
+    background-color: rgb(165, 159, 159);
+    color: black;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    transition: border 0.2s;
+    margin-right: 5px;
+}
+
+/* The option represented by the button is projected with images.
+   Such images should encompass the entire area of the button.
+*/
+.modal-options-button img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Summon border on hover to show interactability.
+*/
+.modal-option-button:hover {
+    border: 1px solid black;
+}
+
+/* Context label for before the simulation runs.
+   Desc: small black letters, centered.
+*/
+.help-note {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 15px;
+    position: relative;
+    left: 20%;
+    top: 45%;
+}
+
+/* Loading circle animation for when the simulation runs.
+   Desc: medium-sized gray spinning circle, centered.
+*/
+.loading-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid rgb(165, 159, 159);
+    border-top: 4px solid transparent;
+    animation: spin 1s linear infinite;
+    top: 40%;
+    left: 45%;
+    position: relative;
+    display: none;
+}
+
+/* The circle texture should rotate to simulate spinning.
+*/
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Context label paired with the loading circle for when the simulation runs.
+   Desc: small black letters, centered, positioned just below the spinning circle.
+*/
+.loading-circle-description {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 13px;
+    position: relative;
+    left: 28%;
+    top: 40%;
+    display: none;
+}

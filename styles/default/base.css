@@ -1,0 +1,14 @@
+@import "canvas.css";
+@import "toolbox.css";
+@import "modal.css";
+
+/*                       BASE
+    This file is only for the very basic/generic elements
+    of css, and also to unite all the other theme parts to one.
+*/
+
+body {
+    overflow-x: hidden; /* note to self: reimplement this when you add a qubit pallette to the canvas*/
+    overflow-y: hidden;
+    font-family: 'Times New Roman', Times, serif;
+}

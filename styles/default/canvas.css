@@ -1,0 +1,162 @@
+/*                   CANVAS
+    i.e. everything concerning the main area of the 
+    webpage where the qubits and the title are.
+*/
+
+
+/*  The main headline at the top of the page.
+    Desc: Big, centered white letters inside 
+          a dark gray rectangle.
+*/
+.main-title {
+    text-align: center;
+    padding: 20px;
+    background-color: #333;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* The global background.
+   Desc: white, all-encompassing.
+*/
+.container { 
+    position: relative;
+    background-color: white;
+}
+
+/* The center-stage for the qubits to spawn.
+   Desc: invisible, encompassing the area
+         between the title and the counters.
+*/
+.qubit-canvas {
+    position: relative;
+    height: 90vh;
+}
+
+/* The rectangle at the bottom right corner
+   displaying relevant stats.
+   Desc: A thin, gray rectangle about a fifth
+         of the screen, at the global bottom right.
+*/
+.counters-container {
+    position: relative;
+    background-color: lightgray;
+    height: 2vh;
+    width: 25vw;
+    left: 80%;
+}
+
+/* A simple stat-tracker.
+   Desc: invisible background, small
+         black letters, a quarter of
+         the parent container.
+*/
+.counter {
+    position: relative;
+    height: 100%;
+    width: 25%;
+    display: inline-block;
+    margin-left: 5px;
+    cursor: default;
+}
+
+/* Emphasize the counter on hover
+   by temporarily turning the background to dark gray.
+*/
+.counter:hover {
+    background-color: rgb(165, 159, 159);
+}
+
+
+/*  Single-qubit container.
+    Desc: invisible rectangle containing the ket state
+          at its start and the qubit wire at its center,
+          extending to the right end of the screen.
+*/
+.qubit-container {
+    position: relative;
+    right: 0;
+    left: 11%;
+    width: 100%;
+    height: 50px;
+}
+
+/* The wire on which gates can be positioned.
+   Desc: long, thin, about 90% of the width of the
+         parent container, right-justified.
+*/
+.qubit-wire {
+    position: absolute;
+    height: 1px;
+    top: 50%;
+    background-color: black;
+    right: 0;
+    left: 2.5%;
+}
+
+/* The state of the qubit in ket format to the left of the wire.
+   Desc: invisible quasi-square containing the ket, small black letters.
+*/
+.qubit-state {
+    position: absolute;
+    height: 30px;
+    width: 33px;
+    top: 20%;
+    color: black;
+    cursor: pointer;
+    background-color: white;
+    border: none;
+    font-size: 15px;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+/* The border of the ket, alternates in colors.
+   Desc: invisible square ontop of the state square,
+         uninteractable, used for changing its border.
+*/
+.register-border {
+    position: absolute;
+    border: none;
+    left: 10.9%;
+    pointer-events: none;
+}
+
+/* Highlight the state container with a lightgreen
+   background to emphasize interactability.
+*/
+.qubit-state:hover {
+    background-color: rgb(175, 236, 175);
+}
+
+/* Double-wire version of the qubit wire, used for
+   representing bits.
+   Desc: copy of qubit-wire with thin black borders
+         and white background.
+*/
+.bit-wire {
+    position: relative;
+    height: 1px;
+    top: 50%;
+    background-color: white;
+    border: 1px double black;
+}
+
+/* Connector for control gates.
+   Desc: black, vertical, same thinness as the qubit wires.
+*/
+.control-wire {
+    position: absolute;
+    width: 1px;
+    background-color: black;
+}
+
+/* Connector for swap gates.
+   Desc: copy of control-wire.
+*/
+.swap-wire {
+    position: absolute;
+    width: 1px;
+    background-color: black;
+}

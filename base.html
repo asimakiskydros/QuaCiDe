@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>QuaCiDe</title>
+        <link rel="stylesheet" type="text/css" href="styles/default/base.css">
+        <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+    </head>
+    <body>
+        <div class="container" id="mainContainer">
+            <div class="main-title">Quantum Circuit Designer</div>
+            <div class="qubit-canvas" id="canvas"></div>
+            <div class="counters-container">
+                <div class="counter" id="qubitsCounter">Qubits: </div>
+                <div class="counter" id="gatesCounter">Gates: </div>
+                <div class="counter" id="stepsCounter">Steps: </div>
+            </div>
+        </div>
+        <div class="container" id="toolbox">
+            <div class="toolbox-palette">
+                <div class="toolbox-title">
+                    Toolbox <hr> <!-- the horizontal line just below the title -->
+                </div>
+                <!-- Create Gate Corner lists -->
+                <div class="gates-corner-container">
+                    <!-- Probes -->
+                    <div class="gate-section-title">Probes</div>
+                    <div class="gate-section-container" id="probesList">
+                        <div class="gate" id="measurementGate">
+                            <img src="icons/measurement.png" alt="M" draggable="false">
+                        </div> <!-- MEASUREMENT GATE - temp -->
+                        <div class="gate" id="controlGate">
+                            <img src="icons/control.png" alt="C" draggable="false">
+                        </div> <!-- CONTROL symbol-->
+                        <div class="gate" id="anticontrolGate">
+                            <img src="icons/anticontrol.png" alt="AC" draggable="false">
+                        </div> <!-- ANTICONTROL symbol -->
+                        <div class="gate" id="swapGate">
+                            <img src="icons/swap.png" alt="SW" draggable="false">
+                        </div> <!-- SWAP -->
+                    </div>
+                    <!-- Half-Turns -->
+                    <div class="gate-section-title">Half-Turns</div>
+                    <div class="gate-section-container" id="halfturnsList">
+                        <div class="gate" id="xGate">
+                            <img src="icons/pauliX.png" alt="X" draggable="false">
+                        </div> <!-- PAULI X-->
+                        <div class="gate" id="yGate"><span>Y</span></div> <!-- PAULI Y-->
+                        <div class="gate" id="zGate"><span>Z</span></div> <!-- PAULI Z-->
+                        <div class="gate" id="hGate"><span>H</span></div> <!-- HADAMARD -->
+                        <div class="gate" id="identityGate" style="display: none;"><span>I</span></div> <!-- IDENTITY -->
+                    </div>
+                    <div class="gate-section-title">Phase Shifts</div>
+                    <div class="gate-section-container" id="phaseshiftsList">
+                        <div class="gate" id="nthXGate">  <!-- Nth POWER OF X -->
+                            <span style="font-size: 20px;">
+                                X<sup>1&frasl;n</sup>
+                            </span>
+                            <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
+                        </div>
+                        <div class="gate" id="nthYGate">  <!-- Nth POWER OF Y -->
+                            <span style="font-size: 20px;">
+                                Y<sup>1&frasl;n</sup>
+                            </span>
+                            <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
+                        </div>
+                        <div class="gate" id="nthZGate">  <!-- Nth POWER OF Z -->
+                            <span style="font-size: 20px;">
+                                Z<sup>1&frasl;n</sup>
+                            </span>
+                            <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
+                        </div>
+                        <div class="gate" id="sGate"><span>S</span></div> <!-- QUARTER TURN -->
+                        <div class="gate" id="tGate"><span>T</span></div> <!-- EIGTHTH TURN -->
+                    </div>
+                </div>
+                <!-- Execution Button Corner -->
+                <div class="execution-container">
+                    <div class="toolbox-title"><hr></div>
+                    <div class="run-button-container">
+                        <button class="run-button" id="runButton">Run Circuit</button> <!-- Run button -->
+                    </div>
+                </div>
+                <!-- Create Help Corner buttons -->
+                <div class="help-corner-container">
+                    <div class="toolbox-title"><hr></div>
+                    <div class="help-buttons-container">
+                        <button class="small-button" id="undoButton">Undo</button> <!-- Undo button -->
+                        <button class="small-button" id="redoButton">Redo</button> <!-- Redo button -->
+                    </div>
+                    <div class="help-buttons-container">
+                        <button class="long-button" id="clearButton">Clear</button> <!-- Clear button -->
+                    </div>
+                    <div class="help-buttons-container">
+                        <input type="file" id="fileInput" style="display: none">
+                        <button class="small-button" id="importButton">Import</button> <!-- Import button -->
+                        <button class="small-button" id="exportButton">Export</button> <!-- Export button -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 'Run Button' modal divs-->
+        <div id="setupModal" class="modal" style="display: none;">
+            <div class="modal-container">
+                <!-- main green square -->
+                <div class="modal-rest-container">
+                    <label class="modal-label">Run and visualize output</label>
+                    <div class="modal-output-container" id="outputContainer">
+                        <label id="selectParamsDesc" class="help-note">Select desired parameters and start execution.</label>
+                        <div id="loadingCircleWidget" class="loading-circle"></div>
+                        <label id="loadingCircleDesc" class="loading-circle-description">Please wait for the execution to finish...</label>
+                    </div>
+                    <div class="modal-options-section" id="optionsMenu" style="display: none;">
+                        <button class="modal-option-button" id="showHistButton"  title="Show histogram">
+                            <img src="icons/hist-img.png" alt="Hi" draggable="false">
+                        </button>
+                        <button class="modal-option-button" id="showHeatButton" title="Show heatmap">
+                            <img src="icons/heat-img.png" alt="He" draggable="false">
+                        </button>
+                    </div>
+                </div>
+                <!-- command buttons -->
+                <div class="modal-buttons-container">
+                    <div class="modal-buttons-bottom-section">
+                        <button id="executeButton" class="modal-button">Execute Simulation</button>
+                    </div>
+                    <div class="modal-buttons-top-section">
+                        <button id="closeModal" class="modal-button">Close</button>
+                    </div>
+                </div>
+                <!-- user input -->
+                <div class="modal-listboxes-container">
+                    <!-- listbox -->
+                    <div class="modal-buttons-top-section">
+                        <label for="backendList" class="modal-label">Backend Simulator</label>
+                        <div class="modal-listbox">
+                            <select id="backendList" name="backends" class="modal-listbox">
+                                <option value="qasm_simulator">Qasm</option>
+                                <option value="statevector_simulator">State Vector</option>
+                                <!-- <option value="unitary_simulator">Unitary</option>
+                                <option value="pulse_simulator">Pulse</option> -->
+                            </select>
+                        </div>
+                    </div>
+                    <!-- shots inputbox -->
+                    <div class="modal-buttons-top-section">
+                        <label for="shotsInputLabel" class="modal-label">Shots</label>
+                        <input type="text" id="shotsInputBox" class="modal-textbox" placeholder="10000" pattern="\d+" title="Enter a positive integer">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Load Plotly.js -->
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <!-- Load main -->
+        <script type="module" src="js/main.js"></script>
+    </body>
+</html>
