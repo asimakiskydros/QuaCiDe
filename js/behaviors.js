@@ -189,7 +189,7 @@ export function importFromJSON (event) {
             for (const listing of qubit.gates)
                 // try to summon the div with id the listing string. If the listing is correct,
                 // there will exist one element that bears such an id (the gates in the toolbox).
-                Functions.assert(document.getElementById(listing.split('-')[0]), 'Invalid gate inside input file.')
+                Functions.assert(document.getElementById(listing.split('<!@DELIMITER>')[0]), 'Invalid gate inside input file.')
         }
         circuit.saveSnapshot();
         circuit.buildFromTemplate(template);
@@ -386,4 +386,25 @@ export function handleExecution () {
             Alerts.alertServerError();
         }
     });
+}
+
+/**
+ * Immediately delete a gate from the circuit by right clicking on it.
+ * @param {*} event The mouse event that proc-ed this behavior.
+ * @param {*} gate The clicked gate to be deleted.
+ */
+export function fastDeleteGate (event, gate) {
+    // activate only on left click
+    if (event.button !== 2) return;
+
+    // hide default context menu box
+    event.preventDefault();
+
+    // save current state
+    circuit.saveSnapshot();
+
+    // remove from qubit, delete and minimize circuit
+    circuit.detachGateFromQubit(gate, gate.owner);
+    gate.erase();
+    circuit.minimize();
 }

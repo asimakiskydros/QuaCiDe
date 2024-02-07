@@ -1,4 +1,5 @@
 import * as Constants from './constants.js';
+import * as Behaviors from './behaviors.js';
 import { Qubit } from './qubit.js';
 import { Gate } from './gate.js';
 
@@ -11,7 +12,7 @@ let undoStack = [], redoStack = [];
 const controllyGates = ['controlGate', 'anticontrolGate'];
 const nongenericGates = ['identityGate', 'measurementGate'];
 const connectorTypes = ['control-wire', 'swap-wire'];
-
+const poweredGates = ['nthXGate', 'nthYGate', 'nthZGate'];
 
 class Circuit {
     constructor(startingQubits) {
@@ -340,7 +341,7 @@ class Circuit {
                 let stamp = gate.type;
                 // include the specified power of the gate if that applies
                 const powerBox = gate.body.querySelector('.textbox');
-                if (powerBox && powerBox.value) stamp += '-' + powerBox.value; 
+                if (powerBox && powerBox.value) stamp += '<!@DELIMITER>' + powerBox.value; 
                 gates.push(stamp);
             }
             gateList.push(gates);
@@ -436,7 +437,7 @@ class Circuit {
                 // for each qubit wire, attach each copy gate back-to-front.
                 // this is necessary because the copies spawn on the left side of the screen
                 // and thus attachGate knows to shift right to prepend the gate to the left.
-                const parts = gate.split('-');
+                const parts = gate.split('<!@DELIMITER>');
                 const copy = new Gate(document.getElementById(parts[0]));
                 this._qubits[i].attachGate(copy);
 
@@ -453,9 +454,13 @@ class Circuit {
 
                 // feed dragNdrop behavior to new gates
                 copy.body.addEventListener('mousedown', () => {
-                    handleDragNdrop(copy);
+                    Behaviors.handleDragNdrop(copy);
                 });
                 copy.hasDragNdrop = true;
+                // feed fast delete
+                copy.body.addEventListener('contextmenu', (event) => { 
+                    Behaviors.fastDeleteGate(event, copy)
+                });
             }
         }
         this.minimize();
@@ -477,7 +482,7 @@ class Circuit {
                 let stamp = gate.type;
                 // include the specified power of the gate if that applies
                 const powerBox = gate.body.querySelector('.textbox');
-                if (powerBox && powerBox.value) stamp += '-' + powerBox.value; 
+                if (powerBox && powerBox.value) stamp += '<!@DELIMITER>' + powerBox.value; 
                 gates.push(stamp);
             }
             // add relevant qubit information to template slot
@@ -521,6 +526,24 @@ class Circuit {
         // flush the redo stack to remove garbage.
         if (undoStack.length === 0) redoStack = [];
         undoStack.push(this.makeTemplate());
+    }
+    /**
+     * Tests all powered gates for valid exponents. A valid exponent
+     * contains only arithmetical operations.
+     * @returns True if no exponents where found containing NaN.
+     */
+    checkExponentsOnGates () {
+        for (const qubit of this._qubits)
+            for (const gate of qubit.gates)
+                if (poweredGates.includes(gate.type))
+                    try{
+                        math.evaluate(gate.body.querySelector('.textbox').value);
+                    }
+                    catch (error) {
+                        return false;  
+                    }  
+ 
+        return true;
     }
     static getControllyGates () {
         return controllyGates;

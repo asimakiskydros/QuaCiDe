@@ -3,7 +3,7 @@ from qiskit.circuit.library import XGate, YGate, ZGate
 import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
-from fractions import Fraction
+from sympy import sympify
 import json
 
 # enable request app with CORS header
@@ -145,10 +145,10 @@ def create_gate(i_swap, i_reg, i_pow, _column):
         'nthZGate': ZGate
     }
     for pos in i_pow:
-        gate_id, pwr = _column[pos].split('-') 
+        gate_id, pwr = _column[pos].split('<!@DELIMITER>') 
         gate_type = POWERED_GATE.get(gate_id)
         if gate_type:
-            custom_gate.append(gate_type().power(float(Fraction(pwr))), [i])
+            custom_gate.append(gate_type().power(sympify(pwr).evalf()), [i])
             i += 1
 
     # add the swap gates

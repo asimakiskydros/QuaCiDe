@@ -1,7 +1,7 @@
 import { STARTING_QUBITS } from './constants.js';
 import { Circuit } from './circuit.js';
 import { Gate } from './gate.js';
-import { alertNoMeasuring } from './alerts.js';
+import { alertNaNinPoweredGate, alertNoMeasuring } from './alerts.js';
 import * as Behaviors from './behaviors.js';
 
 // initialize circuit
@@ -27,21 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // feed dragNdrop
             Behaviors.handleDragNdrop(copy);
             // feed fast delete
-            copy.body.addEventListener('contextmenu', (event) => {
-                // activate only on left click
-                if (event.button !== 2) return;
-
-                // hide default context menu box
-                event.preventDefault();
-
-                // save current state
-                circuit.saveSnapshot();
-
-                // remove from qubit, delete and minimize circuit
-                circuit.detachGateFromQubit(copy, copy.owner);
-                copy.erase();
-                circuit.minimize();
-            });
+            copy.body.addEventListener('contextmenu', (event) => { Behaviors.fastDeleteGate(event, copy)});
         });
     });
     
@@ -102,7 +88,11 @@ document.addEventListener('DOMContentLoaded', function () {
             alertNoMeasuring();
             return;
         }
-
+        // deny execution if nan exponent was found
+        if (!circuit.checkExponentsOnGates()) {
+            alertNaNinPoweredGate();
+            return;
+        }
         // enable widgets in new modal
         Behaviors.disableModalWidgets(false);
         // summon modal window
