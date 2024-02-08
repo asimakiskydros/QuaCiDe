@@ -25,7 +25,7 @@ The UI offers a variety of user-friendly actions:
 * Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z` or
   
   `CTRL + y` respectively.
-* Press `Run Circuit` with measurement gates present to summon the execution modal.
+* Press `Run Circuit` summon the execution modal.
 * Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.
 * Receive output as interactable and downloadable plots.
 
