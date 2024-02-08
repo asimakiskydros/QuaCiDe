@@ -83,11 +83,6 @@ document.addEventListener('DOMContentLoaded', function () {
      * on clicking the 'Run Circuit' button.
      */
     document.getElementById('runButton').addEventListener('click', () => {
-        // deny execution if no measurement gates were placed
-        if (Gate.placedMeasurementGates === 0) {
-            alertNoMeasuring();
-            return;
-        }
         // deny execution if nan exponent was found
         if (!circuit.checkExponentsOnGates()) {
             alertNaNinPoweredGate();

@@ -329,47 +329,6 @@ class Circuit {
         canvas.appendChild(controlWire);
     }
     /**
-     * Creates the gate matrix of the circuit, where each row represents a qubit and holds its gates as id-strings.
-     * 
-     * @returns The stringified gate matrix to JSON format.
-     */
-    fetchStringifiedGates () {
-        const gateList = [];
-        for (const qubit of this._qubits) {
-            const gates = [];
-            for (const gate of qubit.gates) {
-                let stamp = gate.type;
-                // include the specified power of the gate if that applies
-                const powerBox = gate.body.querySelector('.textbox');
-                if (powerBox && powerBox.value) stamp += '<!@DELIMITER>' + powerBox.value; 
-                gates.push(stamp);
-            }
-            gateList.push(gates);
-        }
-        return JSON.stringify(gateList);
-    }
-    /**
-     * Builds the current specified initial state as a string using the specified encoding.
-     * @param {*} encoding 'little-endian' (default) for little endian, otherwise uses big endian.
-     * @returns The stringified initial state.
-     */
-    fetchInitialState (encoding = 'little-endian') {
-        let initialState = '';
-        this._qubits.forEach(qubit => {
-            // discard ket syntax
-            let value = qubit.state.textContent.substring(1, qubit.state.textContent.length - 1);
-            // '0' -> '0', '1' -> '1', '+' -> '+', '-' -> '-', '+i' -> r, '-i' -> l
-            if (value === '+i') value = 'r';
-            else if (value === '-i') value = 'l';
-
-            initialState += value;
-        });
-        // reverse the string if the encoding is in little endian
-        if (encoding === 'little-endian')
-            initialState = initialState.split('').reverse().join('');
-        return initialState;
-    }
-    /**
      * Draws correct register rectangles around the kets of the existing qubits
      * according to their specified color. Neighboring ket borders become
      * unified into one. Color shuffles in order by right-clicking the ket.

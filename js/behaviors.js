@@ -300,14 +300,13 @@ export function handleExecution () {
     disableModalWidgets(true);
     
     // fetch circuit architecture
-    const template = circuit.fetchStringifiedGates();
-    // fetch initial state
-    const initialState = circuit.fetchInitialState();
+    const template = circuit.makeTemplate();
     // fetch shots and backend from input boxes in the modal GUI
-    const shots = parseInt(document.getElementById('shotsInputBox').value || 
-                           document.getElementById('shotsInputBox').placeholder
-                        );
-    const backend = document.getElementById('backendList').value;
+    template.shots = parseInt(
+        document.getElementById('shotsInputBox').value || 
+        document.getElementById('shotsInputBox').placeholder
+    );
+    template.backend = document.getElementById('backendList').value;
 
     // send the circuit to qiskit and wait for the output
     fetch('http://127.0.0.1:5000/parser', {
@@ -315,7 +314,7 @@ export function handleExecution () {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ template, initialState, shots, backend }),
+        body: JSON.stringify(template),
         signal: abortController.signal,
     })
     .then(response => {
@@ -324,9 +323,10 @@ export function handleExecution () {
         return response.json();
     })
     .then(results => {
-        // remove loading screen
+        // remove loading screen and potentially leftover options
         loadingCircle.style.display = 'none';
         lcDesc.style.display = 'none';
+        optionsMenu.style.display = 'none';
         
         // initialize containers
         canvasHist = Functions.createPlotCanvas('canvasHistogram', container.clientHeight, container.clientWidth);
@@ -336,19 +336,22 @@ export function handleExecution () {
         container.appendChild(canvasHist);
         container.appendChild(canvasHeat);
 
-        // plot histogram
-        Plotly.newPlot('canvasHistogram', [{
-            x: Object.keys(results.counts),
-            y: Object.values(results.counts),
-            type: 'bar',
-            orientation: 'v',
-            marker: { color: 'lightgreen' }
-        }],{
-            title: 'Counts',
-            xaxis: {
-                autotypenumbers: 'strict',
-                tickangle: 60,
-        }});
+        // plot histogram iff the results contain valid counts
+        // (could be None as not all backends support it and
+        // circuits without measurements produce none)
+        if (results.counts)
+            Plotly.newPlot('canvasHistogram', [{
+                x: Object.keys(results.counts),
+                y: Object.values(results.counts),
+                type: 'bar',
+                orientation: 'v',
+                marker: { color: 'lightgreen' }
+            }],{
+                title: 'Counts',
+                xaxis: {
+                    autotypenumbers: 'strict',
+                    tickangle: 60,
+            }});
 
         // plot heatmap
         const [y, x, z, text] = Functions.data2heatmap(results.amplitudes, results.probabilites);
@@ -370,14 +373,16 @@ export function handleExecution () {
                      tickangle: 90,             },
         });
 
-        // load histogram first
-        canvasHist.style.display = 'flex';
+        // load histogram first if existing
+        if (results.counts) canvasHist.style.display = 'flex';
+        else canvasHeat.style.display = 'flex';
 
         // re-enable all buttons
         disableModalWidgets(false);
 
-        // reveal graph options menu
-        optionsMenu.style.display = 'flex';
+        // reveal graph options menu if at least one plot other
+        // than the heatmap is also active
+        if (results.counts) optionsMenu.style.display = 'flex';
     })
     .catch(error => {
         closeModal();
