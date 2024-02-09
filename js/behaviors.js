@@ -365,6 +365,8 @@ export function handleExecution () {
             type: 'heatmap',
             colorscale: 'Greens',
             reversescale: true,
+            zmin: 0,
+            zmax: 1
         }], {
             title: 'Amplitude matrix',
             hoverlabel: { align: 'left' },

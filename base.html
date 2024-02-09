@@ -9,7 +9,7 @@
     </head>
     <body>
         <div class="container" id="mainContainer">
-            <div class="main-title">Quantum Circuit Designer</div>
+            <div class="main-title"><span>Qua</span>ntum <span>Ci</span>rcuit <span>De</span>signer</div>
             <div class="qubit-canvas" id="canvas"></div>
             <div class="counters-container">
                 <div class="counter" id="qubitsCounter">Qubits: </div>
@@ -27,75 +27,119 @@
                     <!-- Probes -->
                     <div class="gate-section-title">Probes</div>
                     <div class="gate-section-container" id="probesList">
+                         <!-- MEASUREMENT GATE -->
                         <div class="gate" id="measurementGate">
                             <img src="icons/measurement.png" alt="M" draggable="false">
-                        </div> <!-- MEASUREMENT GATE - temp -->
+                        </div>
+                        <!-- CONTROL symbol-->
                         <div class="gate" id="controlGate">
                             <img src="icons/control.png" alt="C" draggable="false">
-                        </div> <!-- CONTROL symbol-->
+                        </div> 
+                        <!-- ANTICONTROL symbol -->
                         <div class="gate" id="anticontrolGate">
                             <img src="icons/anticontrol.png" alt="AC" draggable="false">
-                        </div> <!-- ANTICONTROL symbol -->
+                        </div> 
+                        <!-- SWAP -->
                         <div class="gate" id="swapGate">
                             <img src="icons/swap.png" alt="SW" draggable="false">
-                        </div> <!-- SWAP -->
+                        </div> 
                     </div>
                     <!-- Half-Turns -->
                     <div class="gate-section-title">Half-Turns</div>
                     <div class="gate-section-container" id="halfturnsList">
+                        <!-- PAULI X-->
                         <div class="gate" id="xGate">
                             <img src="icons/pauliX.png" alt="X" draggable="false">
-                        </div> <!-- PAULI X-->
-                        <div class="gate" id="yGate"><span>Y</span></div> <!-- PAULI Y-->
-                        <div class="gate" id="zGate"><span>Z</span></div> <!-- PAULI Z-->
-                        <div class="gate" id="hGate"><span>H</span></div> <!-- HADAMARD -->
-                        <div class="gate" id="identityGate" style="display: none;"><span>I</span></div> <!-- IDENTITY -->
+                        </div> 
+                        <!-- PAULI Y-->
+                        <div class="gate" id="yGate">
+                            <span>Y</span>
+                        </div> 
+                        <!-- PAULI Z-->
+                        <div class="gate" id="zGate">
+                            <span>Z</span>
+                        </div> 
+                        <!-- HADAMARD -->
+                        <div class="gate" id="hGate">
+                            <span>H</span>
+                        </div> 
+                        <!-- IDENTITY -->
+                        <div class="gate" id="identityGate" style="display: none;">
+                            <span>I</span>
+                        </div> 
                     </div>
                     <div class="gate-section-title">Phase Shifts</div>
                     <div class="gate-section-container" id="phaseshiftsList">
-                        <div class="gate" id="nthXGate">  <!-- Nth POWER OF X -->
+                        <!-- Nth POWER OF X -->
+                        <div class="gate" id="nthXGate">  
                             <span style="font-size: 20px;">
                                 X<sup>1&frasl;n</sup>
                             </span>
                             <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
                         </div>
-                        <div class="gate" id="nthYGate">  <!-- Nth POWER OF Y -->
+                        <!-- Nth POWER OF Y -->
+                        <div class="gate" id="nthYGate">  
                             <span style="font-size: 20px;">
                                 Y<sup>1&frasl;n</sup>
                             </span>
                             <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
                         </div>
-                        <div class="gate" id="nthZGate">  <!-- Nth POWER OF Z -->
+                         <!-- Nth POWER OF Z -->
+                        <div class="gate" id="nthZGate"> 
                             <span style="font-size: 20px;">
                                 Z<sup>1&frasl;n</sup>
                             </span>
                             <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
                         </div>
-                        <div class="gate" id="sGate"><span>S</span></div> <!-- QUARTER TURN -->
-                        <div class="gate" id="tGate"><span>T</span></div> <!-- EIGTHTH TURN -->
+                        <!-- QUARTER TURN -->
+                        <div class="gate" id="sGate">
+                            <span>S</span>
+                        </div> 
+                        <!-- EIGHTH TURN -->
+                        <div class="gate" id="tGate">
+                            <span>T</span>
+                        </div> 
                     </div>
                 </div>
                 <!-- Execution Button Corner -->
                 <div class="execution-container">
                     <div class="toolbox-title"><hr></div>
                     <div class="run-button-container">
-                        <button class="run-button" id="runButton">Run Circuit</button> <!-- Run button -->
+                        <!-- Run button -->
+                        <button class="run-button" id="runButton" title="Prepare the circuit for execution">
+                            Run Circuit
+                        </button> 
                     </div>
                 </div>
                 <!-- Create Help Corner buttons -->
                 <div class="help-corner-container">
                     <div class="toolbox-title"><hr></div>
                     <div class="help-buttons-container">
-                        <button class="small-button" id="undoButton">Undo</button> <!-- Undo button -->
-                        <button class="small-button" id="redoButton">Redo</button> <!-- Redo button -->
+                        <!-- Undo button -->
+                        <button class="small-button" id="undoButton" title="Undo the previous action (CTRL + Z)">
+                            Undo
+                        </button> 
+                        <!-- Redo button -->
+                        <button class="small-button" id="redoButton" title="Redo the last undone action (CTRL + SHIFT + Z)">
+                            Redo
+                        </button> 
                     </div>
+                    <!-- Clear button -->
                     <div class="help-buttons-container">
-                        <button class="long-button" id="clearButton">Clear</button> <!-- Clear button -->
+                        <button class="long-button" id="clearButton" title="Revert the circuit back to 2 empty qubits">
+                            Clear
+                        </button> 
                     </div>
                     <div class="help-buttons-container">
                         <input type="file" id="fileInput" style="display: none">
-                        <button class="small-button" id="importButton">Import</button> <!-- Import button -->
-                        <button class="small-button" id="exportButton">Export</button> <!-- Export button -->
+                        <!-- Import button -->
+                        <button class="small-button" id="importButton" title="Import from JSON...">
+                            Import
+                        </button> 
+                        <!-- Export button -->
+                        <button class="small-button" id="exportButton" title="Export to JSON (CTRL + S)">
+                            Export
+                        </button> 
                     </div>
                 </div>
             </div>
@@ -105,11 +149,17 @@
             <div class="modal-container">
                 <!-- main green square -->
                 <div class="modal-rest-container">
-                    <label class="modal-label">Run and visualize output</label>
+                    <label class="modal-label">
+                        Run and visualize output
+                    </label>
                     <div class="modal-output-container" id="outputContainer">
-                        <label id="selectParamsDesc" class="help-note">Select desired parameters and start execution.</label>
+                        <label id="selectParamsDesc" class="help-note">
+                            Select desired parameters and start execution.
+                        </label>
                         <div id="loadingCircleWidget" class="loading-circle"></div>
-                        <label id="loadingCircleDesc" class="loading-circle-description">Please wait for the execution to finish...</label>
+                        <label id="loadingCircleDesc" class="loading-circle-description">
+                            Please wait for the execution to finish...
+                        </label>
                     </div>
                     <div class="modal-options-section" id="optionsMenu" style="display: none;">
                         <button class="modal-option-button" id="showHistButton"  title="Show histogram">
@@ -123,10 +173,14 @@
                 <!-- command buttons -->
                 <div class="modal-buttons-container">
                     <div class="modal-buttons-bottom-section">
-                        <button id="executeButton" class="modal-button">Execute Simulation</button>
+                        <button id="executeButton" class="modal-button" title="Run experiment with the specified parameters">
+                            Execute Simulation
+                        </button>
                     </div>
                     <div class="modal-buttons-top-section">
-                        <button id="closeModal" class="modal-button">Close</button>
+                        <button id="closeModal" class="modal-button" title="Close modal. Pending executions will be aborted.">
+                            Close
+                        </button>
                     </div>
                 </div>
                 <!-- user input -->
@@ -150,6 +204,165 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <!-- Context menus for the gates on the toolbox -->
+        <div class="gate-context" id="measurementGateContext">
+            <b style="color: rgb(77, 187, 77);">Measurement Gate</b>
+            <br>
+            <br>Collapses the qubit state
+            <br>into one of the basis vectors,
+            <br>each with its respecting
+            <br>probability. 
+        </div>
+        <div class="gate-context" id="controlGateContext">
+            <b style="color: rgb(77, 187, 77);">Control Gate</b>
+            <br>
+            <br>Thwarts the activation
+            <br>of the step, unless parent
+            <br>qubit is on state 1.
+        </div>
+        <div class="gate-context" id="anticontrolGateContext">
+            <b style="color: rgb(77, 187, 77);">Anti-control Gate</b>
+            <br>
+            <br>Thwarts the activation
+            <br>of the step, unless parent
+            <br>qubit is on state 0.
+        </div>
+        <div class="gate-context" id="swapGateContext">
+            <b style="color: rgb(77, 187, 77);">Swap Gate</b>
+            <br>
+            <br>Swaps two qubits.
+            <br>Each step can have none
+            <br>or strictly 2 swaps.
+        </div>
+        <div class="gate-context" id="xGateContext">
+            <b style="color: rgb(77, 187, 77);">Pauli X Gate</b>
+            <br>
+            <br>The NOT gate.
+            <br>Flips the qubit state
+            <br>on the x-axis.
+            <br>As matrix: 
+            <table class="matrix">
+                <!-- the multiple nobreak spaces here are for alignment-->
+                <tr><td>0</td><td>&nbsp;&nbsp;</td><td>1</td></tr>
+                <tr><td>1</td><td>&nbsp;&nbsp;</td><td>0</td></tr>
+            </table>
+        </div>
+        <div class="gate-context" id="yGateContext">
+            <b style="color: rgb(77, 187, 77);">Pauli Y Gate</b>
+            <br>
+            <br>Flips the qubit state
+            <br>on the y-axis.
+            <br>As matrix: 
+            <table class="matrix">
+                <tr><td>0</td><td>&nbsp;&nbsp;</td><td>-j</td></tr>
+                <tr><td>j</td><td>&nbsp;&nbsp;</td><td>0</td></tr>
+            </table>
+        </div>
+        <div class="gate-context" id="zGateContext">
+            <b style="color: rgb(77, 187, 77);">Pauli Z Gate</b>
+            <br>
+            <br>The phase flip gate.
+            <br>Flips the qubit state
+            <br>on the z-axis.
+            <br>As matrix: 
+            <table class="matrix">
+                <tr><td>1</td><td>&nbsp;</td><td>&nbsp;0</td></tr>
+                <tr><td>0</td><td>&nbsp;</td><td>-1</td></tr>
+            </table>
+        </div>
+        <div class="gate-context" id="hGateContext">
+            <b style="color: rgb(77, 187, 77);">Hadamard Gate</b>
+            <br>
+            <br>Maps the current qubit
+            <br>state to its corresponding
+            <br>superposition.
+            <br>As matrix: 
+            <table class="matrix">
+                <tr>
+                    <td>
+                        <!-- Cleanest way to write 1/sqrt(2)... -->
+                        <math><mfrac><mn>1</mn><msqrt><mn>2</mn></msqrt></mfrac></math>
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <math><mfrac><mn>1</mn><msqrt><mn>2</mn></msqrt></mfrac></math>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <math><mfrac><mn>1</mn><msqrt><mn>2</mn></msqrt></mfrac></math>    
+                    </td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <math><mfrac><mn>-1</mn><msqrt><mn>2</mn></msqrt></mfrac></math>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="gate-context" id="nthXGateContext">
+            <b style="color: rgb(77, 187, 77);">Nth power of X Gate</b>
+            <br>
+            <br>Raises Pauli X to
+            <br>the given power.
+            <br>Supported operations:
+            <br>+&nbsp;-&nbsp;*&nbsp;/&nbsp;^&nbsp;(&nbsp;)
+        </div>
+        <div class="gate-context" id="nthYGateContext">
+            <b style="color: rgb(77, 187, 77);">Nth power of Y Gate</b>
+            <br>
+            <br>Raises Pauli Y to
+            <br>the given power.
+            <br>Supported operations:
+            <br>+&nbsp;-&nbsp;*&nbsp;/&nbsp;^&nbsp;(&nbsp;)
+        </div>
+        <div class="gate-context" id="nthZGateContext">
+            <b style="color: rgb(77, 187, 77);">Nth power of Z Gate</b>
+            <br>
+            <br>Parameterized Phase shift.
+            <br>As matrix:
+            <table class="matrix">
+                <tr><td>1</td><td>&nbsp;</td><td>&nbsp;&nbsp;&nbsp;0</td></tr>
+                <tr>
+                    <td>0</td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <!-- e^(jφ) -->
+                        <math><msup><mi>e</mi><mi>jφ</mi></msup></math>
+                    </td>
+                </tr>
+            </table>
+            Supported operations:
+            <br>+&nbsp;-&nbsp;*&nbsp;/&nbsp;^&nbsp;(&nbsp;)
+        </div>
+        <div class="gate-context" id="sGateContext">
+            <b style="color: rgb(77, 187, 77);">S Gate</b>
+            <br>
+            <br>Quarter turn around
+            <br>the z-axis. Equal to &radic;Z.
+            <br>As matrix:
+            <table class="matrix">
+                <tr><td>1</td><td>&nbsp;&nbsp;</td><td>0</td></tr>
+                <tr><td>0</td><td>&nbsp;&nbsp;</td><td>j</td></tr>
+            </table>
+        </div>
+        <div class="gate-context" id="tGateContext">
+            <b style="color: rgb(77, 187, 77);">T Gate</b>
+            <br>
+            <br>Eighth turn around
+            <br>the z-axis. Equal to &#8732;Z.
+            <br>As matrix:
+            <table class="matrix">
+                <tr><td>1</td><td>&nbsp;</td><td>&nbsp;&nbsp;&nbsp;0</td></tr>
+                <tr>
+                    <td>0</td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <!-- e^(j*pi/4) -->
+                        <math><msup><mi>e</mi><mrow><mi>j</mi><mfrac><mi>π</mi>4</mfrac></mrow></msup></math>
+                    </td>
+                </tr>
+            </table>
         </div>
         <!-- Load Math.js -->
         <script src="https://cdn.jsdelivr.net/npm/mathjs@9/lib/browser/math.min.js"></script>

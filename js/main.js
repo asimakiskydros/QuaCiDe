@@ -1,7 +1,7 @@
 import { STARTING_QUBITS } from './constants.js';
 import { Circuit } from './circuit.js';
 import { Gate } from './gate.js';
-import { alertNaNinPoweredGate, alertNoMeasuring } from './alerts.js';
+import { alertNaNinPoweredGate } from './alerts.js';
 import * as Behaviors from './behaviors.js';
 
 // initialize circuit
@@ -10,12 +10,12 @@ export const circuit = new Circuit(STARTING_QUBITS);
 export const toolbox = document.querySelectorAll('.gate');
 
 document.addEventListener('DOMContentLoaded', function () {
-    /**
-     * On clicking a gate positioned on the toolbox,
-     * spawn an exact copy and feed it drag and drop
-     * and fast delete behaviors.
-     */
     toolbox.forEach(gate => {
+        /**
+         * On clicking a gate positioned on the toolbox,
+         * spawn an exact copy and feed it drag and drop
+         * and fast delete behaviors.
+         */
         gate.addEventListener('mousedown', (e) => {
             // activate only on left click
             if (e.button !== 0) return;
@@ -29,6 +29,22 @@ document.addEventListener('DOMContentLoaded', function () {
             // feed fast delete
             copy.body.addEventListener('contextmenu', (event) => { Behaviors.fastDeleteGate(event, copy)});
         });
+        /**
+         * On hovering a gate on the toolbox, show correct
+         * context menu, positioned just above it.
+         * Vanish it again on mouseout.
+         */
+        gate.addEventListener('mouseover', () => {
+            const contextMenu = document.getElementById(gate.id + 'Context');
+            const gateRect = gate.getBoundingClientRect();
+            contextMenu.style.display = 'inline-block';
+            contextMenu.style.top = gateRect.bottom + 'px';
+            contextMenu.style.left = gateRect.left + 'px';
+        })
+        gate.addEventListener('mouseout', () => {
+            const contextMenu = document.getElementById(gate.id + 'Context');
+            contextMenu.style.display = 'none';
+        })
     });
     
     /**

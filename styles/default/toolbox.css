@@ -87,6 +87,57 @@ hr {
     vertical-align: top;
 }
 
+/* Context menu for the gates on the toolbox.
+   Desc: Dark gray rectangle, white letters,
+         above all other elements in the toolbox,
+         initially invisible.
+*/
+.gate-context {
+    display: none;
+    background-color: #333;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    white-space: nowrap;
+    position: absolute;
+    z-index: 10;
+}
+
+/* Linear algebra matrix view structure.
+   Desc: root for creating a bmatrix inside
+         div textContent, marginalized from 
+         the left.
+*/
+.matrix {
+    position: relative;
+    left: 33%;
+}
+
+/* Draw the regions of the bmatrix.
+*/
+.matrix:before, .matrix:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    border: 2px solid white;
+    width: 3px;
+    height: 90%;
+}
+
+/* Left outer region of matrix.
+*/
+.matrix:before {
+    left: -6px;
+    border-right: 0;
+}
+
+/* Right outer region of matrix.
+*/
+.matrix:after {
+    right: -6px;
+    border-left: 0;
+}
+
 /* Highlight the gates lightgreen on hover to
    signal interactability. Also spawn the border,
    in the case the gate has special textures.

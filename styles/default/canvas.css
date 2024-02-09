@@ -17,6 +17,13 @@
     font-weight: bold;
 }
 
+/* Customization for the main title.
+   Desc: Lightgreen shader for the text.
+*/
+.main-title span {
+    color: rgb(77, 187, 77);
+}
+
 /* The global background.
    Desc: white, all-encompassing.
 */

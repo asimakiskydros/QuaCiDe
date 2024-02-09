@@ -17,10 +17,11 @@ def run_simulation():
     counts = calculate_counts(template)
     amplitudes = calculate_amplitudes(template)
     probabilites = np.round(np.abs(amplitudes) ** 2, 4)
-
+    
     return jsonify({
         'counts': counts,
-        'amplitudes': amplitudes.astype(str).tolist(),
+        # remove any unnecessary parentheses
+        'amplitudes': [el.replace('(', '').replace(')', '') for el in amplitudes.astype(str).tolist()],
         'probabilites': probabilites.tolist()
     })
 
@@ -57,9 +58,9 @@ def get_gate_matrix(template: dict, dummy: str = 'identityGate', ignore: str = N
             row.append(dummy)
     
     matrix = np.array(matrix)
-    
+
     # replace all ignore instances with dummy values, if specified
-    return np.where(matrix == ignore, dummy, matrix) if ignore else matrix
+    return np.where(matrix == ignore, dummy, matrix) if ignore and matrix.shape[1] > 0 else matrix
 
 
 def segregate(column: list[str]):
