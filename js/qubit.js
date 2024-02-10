@@ -14,6 +14,7 @@ class Qubit {
      */
     constructor (id, topPixels) {
         this._gates = [];
+        this._bitPositions = '';
 
         // create container
         this._container = document.createElement('div');
@@ -30,14 +31,6 @@ class Qubit {
         this._state.className = 'qubit-state';
         this._state.textContent = '|0〉';
         this._state.id = 'state' + id;
-
-        // create hidden classical bit representation for later
-        this._bit_line = document.createElement('div');
-        this._bit_line.className = 'bit-wire';
-        this._bit_line.id = 'bit' + id;
-        this._bit_line.style.left = '100%'; // start at 100% distance from the left, this essentially makes it invisible
-        this._bit_line.style.right = '0';
-        this._container.appendChild(this._bit_line);
 
         // add state shuffling functionality when left-clicking state
         this._state.addEventListener('click', () => {
@@ -63,10 +56,6 @@ class Qubit {
 
         this._container.appendChild(this._state);
         this._container.appendChild(this._wire);
-        this._container.appendChild(this._bit_line);
-
-        this._bit_start = undefined;
-        this._bit_end = undefined;
     }
     // getters
     get container () {
@@ -97,9 +86,6 @@ class Qubit {
             this._gates.every(element => element.type === 'identityGate')
         );
     }
-    get bitRange () {
-        return [this._bit_start, this._bit_end];
-    }
     get registerColor () {
         return this._registerColor;
     }
@@ -115,7 +101,7 @@ class Qubit {
     snapOnWirePosition (gate, position) {
         const wireRect = this._wire.getBoundingClientRect();
 
-        gate.body.style.top  = wireRect.top - Constants.SNAP_DISTANCE + 'px';
+        gate.body.style.top  = wireRect.top - Constants.SNAP_DISTANCE + 1 + 'px';
         gate.body.style.left = wireRect.left + Constants.GATE_DELIMITER / 4 + position * Constants.GATE_DELIMITER + 'px';
     }
     /**
@@ -149,28 +135,45 @@ class Qubit {
      * @param {*} ignored (Optional) A gate that, if met, should not be taken into consideration.
      */
     scanForMeasurement (ignored) {
-        // disable any previous bit line changes
-        this._bit_line.style.left = '100%';
+        // revert to standard wire
+        this._wire.style.background = 'black';
+        this._wire.style.borderImage = 'none';
+        this._bitPositions = '';
+
         // search for a measurement gate
         for (let i = 0; i < this._gates.length; i++){
             if (ignored === this._gates[i]) continue;
             if (this._gates[i].type === 'measurementGate') {
-                // take into consideration only the first one. Subsequent measurement gates have no effect on the wire style.
+                // take into consideration only the first one. 
+                // Subsequent measurement gates have no effect on the wire style.
                 this.turnToBit(i);
                 break;
             }
         }
     }
     /**
-     * Turn the single horizontal line into a double horizontal line in the given index range.
-     * @param {*} start The starting index.
-     * @param {*} end The ending index.
+     * Turn the qubit wire to double from given position onward.
+     * @param {*} pos The starting position to change the style.
      */
-    turnToBit (start, end) {
-        this._bit_start = start;
-        this._bit_end = end;
-        if (start !== undefined) this._bit_line.style.left = (start + 1.4) * Constants.GATE_DELIMITER + 'px';
-        if (end !== undefined) this._bit_line.style.right = end * Constants.GATE_DELIMITER + 'px';
+    turnToBit (pos) {
+        // translate position to pixels
+        const pivot = (pos + 0.5) * Constants.GATE_DELIMITER;
+
+        // change wire style
+        this._wire.style.background = `linear-gradient(to right, black ${pivot}px, white ${pivot}px)`;
+        this._wire.style.borderImage = `linear-gradient(to right, white ${pivot}px, black ${pivot}px) 1`;
+
+        // inform lookup of new qubit-bit positions
+        this._bitPositions = ''
+        for (let i = 0; i < this.weight; i++) this._bitPositions += i < pos ? 'q' : 'b';
+    }
+    /**
+     * Informs whether the qubit has collapsed at given position.
+     * @param {*} pos The position of the qubit to test.
+     * @returns True if the position is valid and the wire is double on it.
+     */
+    isPositionBit (pos) {
+        return pos < this._bitPositions.length && this._bitPositions[pos] === 'b';
     }
     /**
      * Attach the given gate to this wire, shifting the current gate layout as needed.

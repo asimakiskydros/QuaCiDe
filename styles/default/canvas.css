@@ -97,9 +97,12 @@
     position: absolute;
     height: 1px;
     top: 50%;
-    background-color: black;
     right: 0;
     left: 2.5%;
+    border-width: 1px;
+    border-style: solid;
+    border-color: white;
+    background-color: black;
 }
 
 /* The state of the qubit in ket format to the left of the wire.
@@ -135,19 +138,6 @@
 */
 .qubit-state:hover {
     background-color: rgb(175, 236, 175);
-}
-
-/* Double-wire version of the qubit wire, used for
-   representing bits.
-   Desc: copy of qubit-wire with thin black borders
-         and white background.
-*/
-.bit-wire {
-    position: relative;
-    height: 1px;
-    top: 50%;
-    background-color: white;
-    border: 1px double black;
 }
 
 /* Connector for control gates.
