@@ -173,7 +173,12 @@ class Qubit {
      * @returns True if the position is valid and the wire is double on it.
      */
     isPositionBit (pos) {
-        return pos < this._bitPositions.length && this._bitPositions[pos] === 'b';
+        if (pos < this._bitPositions.length && this._bitPositions[pos] === 'b')
+            return true;
+        else 
+            // if the asked position is out of bounds, assume bit/qubit state mimics
+            // the last one recorded, up to infinity
+            return this._bitPositions.slice(-1) === 'b';
     }
     /**
      * Attach the given gate to this wire, shifting the current gate layout as needed.

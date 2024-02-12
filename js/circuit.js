@@ -13,6 +13,7 @@ const controllyGates = ['controlGate', 'anticontrolGate'];
 const nongenericGates = ['identityGate', 'measurementGate'];
 const connectorTypes = ['control-wire', 'swap-wire'];
 const poweredGates = ['nthXGate', 'nthYGate', 'nthZGate'];
+const errorableGates = ['swapGate', 'hGate', 'nthXGate', 'nthYGate'];
 
 class Circuit {
     constructor(startingQubits) {
@@ -159,11 +160,18 @@ class Circuit {
             this._qubitCounter > Constants.STARTING_QUBITS
         )
             this.popQubit();
-
+    }
+    /**
+     * Apply changes to the circuit by discarding unnecessary steps/qubits/idGates,
+     * re-connecting controls and swaps, re-applying borders and re-counting stats.
+     */
+    refresh () {
+        this.minimize();
         this.connectControls();
         this.connectSwaps();
         this.updateRegisterBorders();
         this.refreshStatCounters();
+        this.checkForErrors();
     }
     /**
      * Empties the entire register, deleting all gates and all extra qubits.
@@ -173,7 +181,7 @@ class Circuit {
         for (const qubit of this._qubits) qubit.clear();
 
         // all qubits are now empty. Revert to starting position
-        this.minimize();
+        this.refresh();
     }
     /**
      * Attaches the given gate to the given qubit, after translating the given relative position into
@@ -228,15 +236,16 @@ class Circuit {
     connectControls (ignored) {
         this.#updateColumns();
         // discard previously drawn connectors
-        const oldControlLines = document.querySelectorAll('.control-wire');
-        oldControlLines.forEach(line => {canvas.removeChild(line)});
+        for (const line of document.querySelectorAll('.control-wire'))
+            canvas.removeChild(line);
 
         // parse all existing columns and check if they contain at least one control-ly gate and at least one
         // non-special gate (speciality is subjective, i.e. identities shouldn't be connected with controls).
         for (let col = 0; col < this._columns; col++) {
-            let [start, end, hasControl, hasGeneric] = this.testForControlConnectivity(col, ignored);
+            let [start, end, hasQuantumControl, hasClassicalControl, hasGeneric] = this.testForControlConnectivity(col, ignored);
             // if all tests are positive, draw the line
-            if (start > -1 && end > -1 && hasControl && hasGeneric) this.drawConnectorLine(col, start, end, 'control-wire');
+            if (start > -1 && end > -1 && (hasQuantumControl || hasClassicalControl) && hasGeneric)
+                this.drawConnectorLine(col, start, end, 'control-wire', (hasQuantumControl ? 1 : 0) + (hasClassicalControl ? 2 : 0));
         }
     }
     /**
@@ -249,8 +258,8 @@ class Circuit {
     connectSwaps (ignored) {
         this.#updateColumns();
         // discard previously drawn swap lines
-        const oldSwapLines = document.querySelectorAll('.swap-wire');
-        oldSwapLines.forEach(line => {canvas.removeChild(line)});
+        for (const line of document.querySelectorAll('.swap-wire'))
+            canvas.removeChild(line);
 
         // find the first couple of swap gates in a column and connect them
         for (let col = 0; col < this._columns; col++){
@@ -289,7 +298,7 @@ class Circuit {
      * @returns Flags for the connectivity tests and start/end indeces for the potential line.
      */
     testForControlConnectivity (col, ignored) {
-        let start = -1, end = -1, hasControl = false, hasGeneric = false;
+        let start = -1, end = -1, hasClassicalControl = false, hasQuantumControl = false, hasGeneric = false;
 
         for (let i = 0; i < this._qubits.length; i++) {
             if (col >= this._qubits[i].weight || this._qubits[i].gates[col] === ignored) continue;
@@ -297,13 +306,17 @@ class Circuit {
             // test each qubit of the column for the above
             const controlTest = controllyGates.includes(this._qubits[i].gates[col].type);
             const genericTest = !nongenericGates.includes(this._qubits[i].gates[col].type);
-            if (controlTest) hasControl = true;
+            const bitState = this._qubits[i].isPositionBit(col);
+
+            if (controlTest && bitState) hasClassicalControl = true;
+            else if (controlTest) hasQuantumControl = true;
             else if (genericTest) hasGeneric = true;
             // record the positions of the first and last gates in the column that are generic
             if (start > -1 && genericTest) end = i; 
             else if (start < 0 && genericTest) start = i;
         }
-        return [start, end, hasControl, hasGeneric];
+
+        return [start, end, hasQuantumControl, hasClassicalControl, hasGeneric];
     }
     /**
      * Draws a vertical line from wire position col of qubit number start to wire position col of qubit number end.
@@ -312,8 +325,9 @@ class Circuit {
      * @param {*} start The starting qubit's index.
      * @param {*} end The final qubit's index.
      * @param {String} type The vertical line's css class type (control-wire, swap-wire).
+     * @param {*} connectorStyle Customized style of the vertical line (1: quantum connection, 2: classical connection, 3: both)
      */
-    drawConnectorLine (col, start, end, type) {
+    drawConnectorLine (col, start, end, type, connectorStyle = 1) {
         if (!connectorTypes.includes(type)) {
             console.log('Error: wrong class type passed in drawConnectorLine');
             return;
@@ -323,9 +337,14 @@ class Circuit {
 
         controlWire.className = type;
         controlWire.id = type + col + start + end;
-        controlWire.style.left = (col + 5.61) * Constants.GATE_DELIMITER + 'px';
+        controlWire.style.left = (col + 5.59) * Constants.GATE_DELIMITER + 'px';
         controlWire.style.top = Constants.TOP_BOUNDARY + (1 + 2 * start) * Constants.WIRE_HALF_ORBIT + Constants.BLANK_SPACE + 'px';
         controlWire.style.height = (end - start) * 50 + 'px';
+        if (connectorStyle === 2)
+            controlWire.style.backgroundColor = 'white';
+        if (connectorStyle > 1)
+            controlWire.style.border = '1px solid black';
+
         canvas.appendChild(controlWire);
     }
     /**
@@ -407,9 +426,8 @@ class Circuit {
                     powerBox.style.pointerEvents = 'auto';
                 }
                 
-                // remove the border from gates with custom texture
-                if(['xGate', 'swapGate', 'controlGate', 'anticontrolGate'].includes(copy.type))
-                    copy.banishBorder();
+                // remove the border from gates with custom texture               
+                copy.banishBorder();
 
                 // feed dragNdrop behavior to new gates
                 copy.body.addEventListener('mousedown', () => {
@@ -422,7 +440,7 @@ class Circuit {
                 });
             }
         }
-        this.minimize();
+        this.refresh();
     }
     /**
      * Builds an object element, containing sub-objects representing the 
@@ -503,6 +521,43 @@ class Circuit {
                     }  
  
         return true;
+    }
+    checkForErrors () {
+        this.#updateColumns();
+        // remove previous errors
+        for (const qubit of this._qubits) for (const gate of qubit.gates)
+            if (gate.errored) gate.unmakeErrored();
+
+        // check all gates for correctness
+        for (let i = 0; i < this._columns; i++) {
+            const swaps = [];
+            for (const qubit of this._qubits) {
+                // count the swaps present on given column/step
+                if (i < qubit.weight && qubit.gates[i].type == 'swapGate')
+                    swaps.push(qubit.gates[i]);
+                // if the examined gate is not a swap, but is errorable
+                // then immediately turn it red.
+                else if (
+                    i < qubit.weight && 
+                    errorableGates.includes(qubit.gates[i].type) &&
+                    qubit.isPositionBit(i)
+                )
+                    qubit.gates[i].makeErrored();
+            }
+            // only exactly 2 swaps can be present at each column, or none at all
+            if (swaps.length !== 0 && swaps.length !== 2)
+                for (const gate of swaps) gate.makeErrored();
+        }
+        // live-enable/disable runButton based on context
+        const runButton = document.getElementById('runButton');
+        if (Gate.getNumErrored() > 0) {
+            runButton.disabled = true;
+            runButton.title = 'The circuit contains errored gates!';
+        }
+        else {
+            runButton.disabled = false;
+            runButton.title = 'Prepare the circuit for execution';
+        }
     }
     static getControllyGates () {
         return controllyGates;

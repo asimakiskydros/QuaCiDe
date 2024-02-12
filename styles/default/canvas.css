@@ -147,6 +147,7 @@
     position: absolute;
     width: 1px;
     background-color: black;
+    border: 1px solid white;
 }
 
 /* Connector for swap gates.
@@ -156,4 +157,5 @@
     position: absolute;
     width: 1px;
     background-color: black;
+    border: 1px solid white;
 }

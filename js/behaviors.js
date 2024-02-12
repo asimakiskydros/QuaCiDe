@@ -91,14 +91,25 @@ export function handleDragNdrop (gate) {
             for (row = 0; row < circuit.qubits.length; row++) if (circuit.qubits[row] === qubit) break;
 
             // control connectivity test
-            let [start, end, hasControl, hasGeneric] = circuit.testForControlConnectivity(relativePosition, gate);
+            let [start, end, hasQuantumControl, hasClassicalControl, hasGeneric] = circuit.testForControlConnectivity(relativePosition, gate);
             const isControlly = Circuit.getControllyGates().includes(gate.type);
             const isNongeneric = Circuit.getNongenericGates().includes(gate.type);
-            if ((hasControl && !isControlly && !isNongeneric) || (hasGeneric && isControlly)) {
+            if (((hasQuantumControl || hasClassicalControl) && !isControlly && !isNongeneric) || (hasGeneric && isControlly)) {
                 if (end === -1) end = start;
                 if (start > row) start = row;
                 if (end < row) end = row;
-                circuit.drawConnectorLine(relativePosition, start, end, 'control-wire');
+                if (!isControlly)
+                    circuit.drawConnectorLine(
+                        relativePosition, start, end, 'control-wire', 
+                        (hasQuantumControl ? 1 : 0) + (hasClassicalControl ? 2 : 0)
+                    );
+                else {
+                    const bitState = qubit.isPositionBit(relativePosition);
+                    circuit.drawConnectorLine(
+                        relativePosition, start, end, 'control-wire', 
+                        (hasQuantumControl || !bitState ? 1 : 0) + (hasClassicalControl || bitState ? 2 : 0)
+                    );
+                }
             }
 
             // swap connectivity test
@@ -164,7 +175,7 @@ export function handleDragNdrop (gate) {
         // if not attached to any wire, kill gate
         if (!snapped) gate.erase();
 
-        circuit.minimize();
+        circuit.refresh();
     });
 }
 
@@ -413,5 +424,5 @@ export function fastDeleteGate (event, gate) {
     // remove from qubit, delete and minimize circuit
     circuit.detachGateFromQubit(gate, gate.owner);
     gate.erase();
-    circuit.minimize();
+    circuit.refresh();
 }

@@ -1,6 +1,7 @@
 let createdGatesCounter = 0;
 let placedMeasurementGates = 0;
 let identitiesCounter = 0;
+let erroredGates = 0;
 
 class Gate {
     /**
@@ -102,6 +103,7 @@ class Gate {
     erase () {
         if (this._type === 'measurementGate') placedMeasurementGates--;
         if (this._type === 'identityGate') identitiesCounter--;
+        if (this._errored) erroredGates--;
         createdGatesCounter--;
         this._body.remove();
     }
@@ -110,8 +112,12 @@ class Gate {
      * Useful for gates with unique png-like textures, like Pauli X.
      */
     banishBorder () {
-        this._body.style.backgroundColor = 'transparent';
-        this._body.style.border = 'none';
+        if(['xGate', 'swapGate', 'controlGate', 'anticontrolGate'].includes(this._type)) {
+            this._body.style.backgroundColor = 'transparent';
+            this._body.style.border = 'none';
+            return true;
+        }
+        return false;
     }
     /**
      * Reveal border and background color of gate.
@@ -121,10 +127,26 @@ class Gate {
         this._body.style.backgroundColor = 'white';
         this._body.style.border = '1px solid black';
     }
+    makeErrored () {
+        this._errored = true;
+        this._body.style.backgroundColor = 'white';
+        this._body.style.border = '1px solid red';
+        erroredGates++;
+    }
+    unmakeErrored () {
+        this._errored = false;
+        // re-instate the correct border-background combo
+        if (!this.banishBorder()) this.summonBorder();
+        erroredGates--;
+    }
     static resetCounters () {
         createdGatesCounter = 0;
         identitiesCounter = 0;
         placedMeasurementGates = 0;
+        erroredGates = 0;
+    }
+    static getNumErrored () {
+        return erroredGates;
     }
 }
 
