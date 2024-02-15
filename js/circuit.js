@@ -18,8 +18,6 @@ const errorableGates = ['swapGate', 'hGate', 'nthXGate', 'nthYGate'];
 class Circuit {
     constructor(startingQubits) {
         this._qubits = [];
-        this._qubitCounter = 0;
-        this._depth = Constants.TOP_BOUNDARY;
         this._columns = 0;
 
         // initialize the circuit with as many starting qubits as requested
@@ -36,24 +34,6 @@ class Circuit {
      */
     #updateColumns () {
         this._columns = Math.max(...this._qubits.map(qubit => qubit.weight));
-    }
-    /**
-     * Increment/decrease the stat counters and update the depth of the circuit
-     * when adding/removing qubits.
-     * @param {boolean} adding true means a qubit was added, so increment constants.
-     *                         false means the opposite.
-     */
-    #updateCounters (adding) {
-        if (adding) {
-            this._qubitCounter++;
-            this._depth += Constants.BLANK_SPACE;
-        }
-        else {
-            this._qubitCounter--;
-            this._depth -= Constants.BLANK_SPACE;
-        }
-        // display new counter stats to UI
-        this.refreshStatCounters();
     }
     /**
      * Update the stat trackers on the bottom right of the UI
@@ -75,17 +55,20 @@ class Circuit {
      */
     appendQubit () {
         // create qubit object
-        const qubit = new Qubit(this._qubitCounter, this._depth);
+        const qubit = new Qubit(
+            this._qubits.length,
+            Constants.TOP_BOUNDARY + this._qubits.length * Constants.BLANK_SPACE
+        );
         this._qubits.push(qubit);
 
         // push to canvas
-        canvas.appendChild(qubit.container);
+        canvas.appendChild(qubit.body);
 
         // update counters
-        this.#updateCounters(true);
+        this.refreshStatCounters();
 
-        // return state and wire ids for future reference
-        return [qubit.stateID, qubit.wireID];
+        // return id for future reference
+        return qubit.body.id;
     }
     /**
      * Remove the last qubit from the register
@@ -95,10 +78,58 @@ class Circuit {
         const qubit = this._qubits.pop();
 
         // remove from canvas
-        qubit.container.remove();
+        qubit.body.remove();
 
         // update counters
-        this.#updateCounters(false);
+        this.refreshStatCounters();
+    }
+    /**
+     * Create a new empty qubit just above the given one.
+     * Note that newly created qubits obey the minimizer, therefore
+     * empty ones past the qubit limit will be discarded immediately.
+     * @param {*} qubit The qubit, above which a new one will be spawned.
+     */
+    prependQubit (qubit) {
+        const i = this.argfindQubit(qubit);
+
+        if (i !== 0 && !i) return;
+
+        // save current layout
+        this.saveSnapshot();
+
+        // summon the current template layout
+        const template = this.makeTemplate()
+
+        // shift-right once all elements past and including position i
+        for (let j = template.length - 1; j >= i; j--) 
+            template[j + 1] = template[j];
+
+        // paste the new empty position on index i
+        template[i] = { state: '|0〉', color: '', gates: [] };
+        template.length++;
+        
+        // build the new template
+        this.buildFromTemplate(template);
+    }
+    removeQubit (qubit) {
+        const i = this.argfindQubit(qubit);
+
+        if (i !== 0 && !i) return;
+
+        // save current layout
+        this.saveSnapshot();
+
+        // summon the current template layout
+        const template = this.makeTemplate()
+
+        // shift-left once all elements past and including position i
+        for (let j = i; j < template.length; j++) 
+            template[j] = template[j + 1];
+
+        template.length--;
+        
+        // build the new template
+        this.buildFromTemplate(template);
     }
     /**
      * Loop over the register and find the (at most) one qubit wire that is being hovered
@@ -114,15 +145,26 @@ class Circuit {
     }
     /**
      * Find a qubit that matches the given id, either in wire or in state format.
-     * @param {*} id the qubit's wire or state id.
+     * @param {*} id the qubit's id.
      * @returns the qubit, if an eligible one was found. Null otherwise.
      */
     getQubit (id) {
-        for (const qubit of this._qubits) if (qubit.wireID === id || qubit.stateID === id)
+        for (const qubit of this._qubits) if (qubit.body.id === id)
             // found qubit with either wire or state id the same as the given
             return qubit;
 
         // no qubits with that id
+        return null;
+    }
+    /**
+     * Finds the index of the given qubit inside the circuit array.
+     * @param {*} qubit The qubit whose index is asked.
+     * @returns Index-like integer if found; null otherwise.
+     */
+    argfindQubit (qubit) {
+        for (let i = 0; i < this._qubits.length; i++) 
+            if (this._qubits[i] === qubit) return i;
+
         return null;
     }
     /**
@@ -154,10 +196,10 @@ class Circuit {
         // delete any unused qubit wires
         while (
             // if the last qubit has 0 gates
-            this._qubits[this._qubitCounter - 1].empty
+            this._qubits[this._qubits.length - 1].empty
             &&
             // and the qubit counter is greater than the set minimum
-            this._qubitCounter > Constants.STARTING_QUBITS
+            this._qubits.length > Constants.STARTING_QUBITS
         )
             this.popQubit();
     }
@@ -337,7 +379,7 @@ class Circuit {
 
         controlWire.className = type;
         controlWire.id = type + col + start + end;
-        controlWire.style.left = (col + 5.59) * Constants.GATE_DELIMITER + 'px';
+        controlWire.style.left = (col + 5.77) * Constants.GATE_DELIMITER + 'px';
         controlWire.style.top = Constants.TOP_BOUNDARY + (1 + 2 * start) * Constants.WIRE_HALF_ORBIT + Constants.BLANK_SPACE + 'px';
         controlWire.style.height = (end - start) * 50 + 'px';
         if (connectorStyle === 2)
@@ -375,9 +417,10 @@ class Circuit {
             if (qubit.registerColor === '' || qubit.registerColor) {
                 regBorder = document.createElement('div');
                 regBorder.className = 'register-border';
-                // '10' magic number to align the top of the reg border to the top of
-                // the starting ket.
+                // '10' magic number to align the top and left of the reg border 
+                // to the top and left of the ket.
                 regBorder.style.top = qubit.state.getBoundingClientRect().top - 10 + 'px';
+                regBorder.style.left = qubit.state.getBoundingClientRect().left  - 10 + 'px';
                 regBorder.style.height = qubit.state.clientHeight + 'px';
                 regBorder.style.width = qubit.state.clientWidth + 'px';
                 regBorder.style.border = qubit.registerColor ? `2px solid ${qubit.registerColor}` : '';
@@ -465,7 +508,7 @@ class Circuit {
             // add relevant qubit information to template slot
             template[i] = { state: this._qubits[i].state.textContent,
                             color: this._qubits[i].registerColor,
-                            gates: gates};
+                            gates: gates };
             template.length++;
         }
         return template;
@@ -522,6 +565,15 @@ class Circuit {
  
         return true;
     }
+    /**
+     * Scans the circuit for errored gates and marks them.
+     * 
+     * Currently, a gate is errored if:
+     * 1. Its a swap gate that has no pair on its parent step.
+     * 2. Its a swap with more than one other swap on its parent step.
+     * 3. Its a mixed-superposition gate (Hadamard, X^n, Y^n) placed on
+     *    a bit.
+     */
     checkForErrors () {
         this.#updateColumns();
         // remove previous errors
@@ -545,12 +597,19 @@ class Circuit {
                     qubit.gates[i].makeErrored();
             }
             // only exactly 2 swaps can be present at each column, or none at all
-            if (swaps.length !== 0 && swaps.length !== 2)
-                for (const gate of swaps) gate.makeErrored();
+            if (swaps.length === 2) {
+                // make each other's pair
+                swaps[0].pair = `${swaps[1].owner}<!@DELIMITER>${i}`;
+                swaps[1].pair = `${swaps[0].owner}<!@DELIMITER>${i}`;
+            }
+            else for (const gate of swaps) {
+                gate.pair = '';
+                gate.makeErrored();
+            }
         }
         // live-enable/disable runButton based on context
         const runButton = document.getElementById('runButton');
-        if (Gate.getNumErrored() > 0) {
+        if (Gate.erroredGates > 0) {
             runButton.disabled = true;
             runButton.title = 'The circuit contains errored gates!';
         }

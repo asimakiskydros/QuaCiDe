@@ -2,9 +2,10 @@ import * as Constants from './constants.js';
 import { Gate } from './gate.js';
 import { circuit } from './main.js'; 
 
+const templateQubit = document.getElementById('templateQubit');
 const identityGate = document.getElementById('identityGate');
 const borderColors = ['', 'black', 'purple', 'red', 'orange', 'green'];
-const defaultStates = ['|0〉', '|1〉', '|+〉', '|-〉', '|+i〉', '|-i〉'];
+const defaultStates = ['|0〉', '|1〉', '|+〉', '|-〉', '|+j〉', '|-j〉'];
 
 class Qubit {
     /**
@@ -15,22 +16,13 @@ class Qubit {
     constructor (id, topPixels) {
         this._gates = [];
         this._bitPositions = '';
-
-        // create container
-        this._container = document.createElement('div');
-        this._container.className = 'qubit-container';
-        this._container.style.top = topPixels + 'px';
-
-        // create wire element
-        this._wire = document.createElement('div');
-        this._wire.className = 'qubit-wire';
-        this._wire.id = 'wire' + id;
-
-        // create state display element
-        this._state = document.createElement('button');
-        this._state.className = 'qubit-state';
-        this._state.textContent = '|0〉';
-        this._state.id = 'state' + id;
+        this._registerColor = '';
+        this._body = templateQubit.cloneNode(true);
+        this._body.id = 'qubit' + id;
+        this._body.style.top = topPixels + 'px';
+        this._body.style.display = 'flex';
+        this._wire = this._body.querySelector('.qubit-wire');
+        this._state = this._body.querySelector('.qubit-state');
 
         // add state shuffling functionality when left-clicking state
         this._state.addEventListener('click', () => {
@@ -42,7 +34,6 @@ class Qubit {
             this._state.textContent = `${defaultStates[(argstate + 1) % defaultStates.length]}`;
         });
 
-        this._registerColor = '';
         // add ket coloring shuffling functionality when right-clicking state
         this._state.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -54,24 +45,25 @@ class Qubit {
             this._registerColor = borderColors[(argcolor + 1) % borderColors.length];
         });
 
-        this._container.appendChild(this._state);
-        this._container.appendChild(this._wire);
+        for (const option of this._body.querySelectorAll('.qubit-option'))
+            switch (option.textContent) {
+                case '+':
+                    option.addEventListener('click', () => { circuit.prependQubit(this); });
+                    break;
+                case 'x':
+                    option.addEventListener('click', () => { circuit.removeQubit(this); });
+                    break;
+            }
     }
     // getters
-    get container () {
-        return this._container;
+    get body () {
+        return this._body;
     }
     get wire () {
         return this._wire;
     }
     get state () {
         return this._state;
-    }
-    get wireID () {
-        return this._wire.id;
-    }
-    get stateID () {
-        return this._state.id;
     }
     get weight () {
         return this._gates.length;
@@ -110,7 +102,7 @@ class Qubit {
      * @returns True if the cursor's "rectangle" is inside the qubit container.
      */
     isHovered (e) {
-        const containerRect = this._container.getBoundingClientRect();
+        const containerRect = this._body.getBoundingClientRect();
         return (
             containerRect.top <= e.clientY 
             &&
@@ -189,7 +181,7 @@ class Qubit {
      */
     attachGate (gate, pos, override) {
         // transfer ownership to this qubit
-        gate.owner = this.wireID;
+        gate.owner = this._body.id;
         // pad the qubit with as many identities as necessary to reach the desired position
         if (!override) while (pos > this.weight) this._gates.splice(pos, 0, new Gate(identityGate));
         // add gate to array at index pos

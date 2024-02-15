@@ -3,7 +3,7 @@ from qiskit.circuit.library import XGate, YGate, ZGate, HGate, SGate, TGate
 ket2str = {
     '|0〉': '0', '|1〉': '1',
     '|+〉': '+', '|-〉': '-',
-    '|+i〉': 'r', '|-i〉': 'l'
+    '|+j〉': 'r', '|-j〉': 'l'
 }
 
 control_states = {

@@ -29,6 +29,7 @@ class Gate {
         this._owner = 'none';
         this._type = other.id;
         this._errored = false;
+        this._pair = '';
 
         // if this is an identity gate, dont project it at all
         if (this._type === 'identityGate') { 
@@ -54,6 +55,9 @@ class Gate {
     get errored () {
         return this._errored;
     }
+    get pair () {
+        return this._pair;
+    }
     static get placedMeasurementGates () {
         return placedMeasurementGates;
     }
@@ -62,6 +66,9 @@ class Gate {
     }
     static get gatesCounter () {
         return createdGatesCounter;
+    }
+    static get erroredGates () {
+        return erroredGates;
     }
     // setters
     set hasDragNdrop (status) {
@@ -72,6 +79,9 @@ class Gate {
     }
     set errored (isErrored) {
         this._errored = isErrored;
+    }
+    set pair (pairTemplate) {
+        this._pair = pairTemplate;
     }
     /**
      * Move this div to 'amount' pixels from the left of the screen.
@@ -144,9 +154,6 @@ class Gate {
         identitiesCounter = 0;
         placedMeasurementGates = 0;
         erroredGates = 0;
-    }
-    static getNumErrored () {
-        return erroredGates;
     }
 }
 

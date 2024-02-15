@@ -98,28 +98,62 @@
     height: 1px;
     top: 50%;
     right: 0;
-    left: 2.5%;
+    left: 3%;
     border-width: 1px;
     border-style: solid;
     border-color: white;
     background-color: black;
+    display: inline-block;
 }
 
 /* The state of the qubit in ket format to the left of the wire.
    Desc: invisible quasi-square containing the ket, small black letters.
 */
 .qubit-state {
-    position: absolute;
+    position: relative;
     height: 30px;
-    width: 33px;
+    width: 30px;
     top: 20%;
     color: black;
     cursor: pointer;
     background-color: white;
     border: none;
-    font-size: 15px;
+    font-size: 17px;
     transition: background-color 0.2s;
     white-space: nowrap;
+    margin-left: 2px;
+    display: inline-block;
+    text-align: right;
+    line-height: 30px;
+    padding-left: 3px;
+    user-select: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.qubit-option-container {
+    position: relative;
+    height: 40px;
+    width: 15px;
+    top: 20%;
+    display: inline-block;
+}
+
+.qubit-option {
+    position: relative;
+    display: block;
+    height: 15px;
+    width: 15px;
+    text-align: center;
+    cursor: pointer;
+    background-color: white;
+    font-size: x-small;
+    border: none;
+    transition: background-color 0.2s;
+    text-align: center;
+}
+
+.qubit-option:hover {
+    background-color: rgb(175, 236, 175);
 }
 
 /* The border of the ket, alternates in colors.
@@ -129,7 +163,7 @@
 .register-border {
     position: absolute;
     border: none;
-    left: 10.9%;
+    /*left: 11.85%;*/
     pointer-events: none;
 }
 

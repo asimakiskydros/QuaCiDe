@@ -10,7 +10,16 @@
     <body>
         <div class="container" id="mainContainer">
             <div class="main-title"><span>Qua</span>ntum <span>Ci</span>rcuit <span>De</span>signer</div>
-            <div class="qubit-canvas" id="canvas"></div>
+            <div class="qubit-canvas" id="canvas">
+                <div class="qubit-container" id="templateQubit" style="display: none;">
+                    <div class="qubit-option-container">
+                        <button class="qubit-option">+</button>
+                        <button class="qubit-option">x</button>
+                    </div>
+                    <div class="qubit-state">|0〉</div>
+                    <div class="qubit-wire"></div>
+                </div>
+            </div>
             <div class="counters-container">
                 <div class="counter" id="qubitsCounter">Qubits: </div>
                 <div class="counter" id="gatesCounter">Gates: </div>
@@ -141,6 +150,7 @@
                             Export
                         </button> 
                     </div>
+                    <div style="text-align: center; margin-top: 5px;"><span style="color: #333;">v0.0</span></div>
                 </div>
             </div>
         </div>
