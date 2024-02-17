@@ -1,3 +1,5 @@
+import * as Behaviors from './behaviors.js';
+
 let createdGatesCounter = 0;
 let placedMeasurementGates = 0;
 let identitiesCounter = 0;
@@ -7,7 +9,6 @@ class Gate {
     /**
      * Summon a new gate by copying the given static template.
      * @param {*} other the static HTMLElement clicked in the toolbox.
-     * @param {number} id the id number for the new gate.
      */
     constructor (other) {
         this._body = other.cloneNode(true);
@@ -38,6 +39,25 @@ class Gate {
         }
         // if this is a measurement gate, inform counter
         if (this._type === 'measurementGate') placedMeasurementGates++;
+
+        // make errored on invalid exponential
+        if (['nthXGate', 'nthYGate', 'nthZGate'].includes(this._type)) {
+            const inputBox = this._body.querySelector('.textbox');
+            inputBox.addEventListener('input', () => { Behaviors.handleExponential(this, inputBox.value); });
+        }
+
+        // remove the border from gates with custom texture               
+        this.banishBorder();
+
+        // feed dragNdrop behavior to new gates
+        this._body.addEventListener('mousedown', (e) => { 
+            if (e.shiftKey || e.button !== 0) return;
+            Behaviors.handleDragNdrop(this); 
+        });
+        // feed fast delete
+        this._body.addEventListener('contextmenu', (e) => { Behaviors.fastDeleteGate(e, this); });
+        // feed fast copy
+        this._body.addEventListener('click', (e) => { Behaviors.fastCopyGate(e, this); });
     }
     // getters
     get body () {
@@ -137,13 +157,25 @@ class Gate {
         this._body.style.backgroundColor = 'white';
         this._body.style.border = '1px solid black';
     }
+    /**
+     * Tag this gate as errored and change its border to red.
+     * If this gate is already errored nothing happens.
+     */
     makeErrored () {
+        if (this._errored) return;
+
         this._errored = true;
         this._body.style.backgroundColor = 'white';
         this._body.style.border = '1px solid red';
         erroredGates++;
     }
+    /**
+     * Tag this gate as not errored and return its gate to normal.
+     * If this gate is not errored nothing happens.
+     */
     unmakeErrored () {
+        if (!this._errored) return;
+
         this._errored = false;
         // re-instate the correct border-background combo
         if (!this.banishBorder()) this.summonBorder();

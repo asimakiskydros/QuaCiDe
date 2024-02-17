@@ -24,25 +24,37 @@ class Qubit {
         this._wire = this._body.querySelector('.qubit-wire');
         this._state = this._body.querySelector('.qubit-state');
 
-        // add state shuffling functionality when left-clicking state
-        this._state.addEventListener('click', () => {
+        // add state shuffling functionality when clicking state
+        this._state.addEventListener('click', (e) => {
+            if (e.ctrlKey) return;
+
             // save current state
             circuit.saveSnapshot();
+
+            if (e.shiftKey) {
+                this._state.textContent = defaultStates[0];
+                return;
+            }
 
             const state = this._state.textContent;
             const argstate = defaultStates.indexOf(state);
             this._state.textContent = `${defaultStates[(argstate + 1) % defaultStates.length]}`;
         });
 
-        // add ket coloring shuffling functionality when right-clicking state
-        this._state.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
+        // add ket coloring shuffling functionality when control-clicking state
+        this._state.addEventListener('click', (e) => {
+            if (!e.ctrlKey) return;
 
             // save current state
             circuit.saveSnapshot();
 
-            const argcolor = borderColors.indexOf(this._registerColor);
-            this._registerColor = borderColors[(argcolor + 1) % borderColors.length];
+            if (e.shiftKey)
+                this._registerColor = borderColors[0];
+            else {
+                const argcolor = borderColors.indexOf(this._registerColor);
+                this._registerColor = borderColors[(argcolor + 1) % borderColors.length];
+            }
+            circuit.updateRegisterBorders();
         });
 
         for (const option of this._body.querySelectorAll('.qubit-option'))
@@ -80,6 +92,9 @@ class Qubit {
     }
     get registerColor () {
         return this._registerColor;
+    }
+    get bitPositions () {
+        return this._bitPositions;
     }
     // setters
     set registerColor (color) {
@@ -130,7 +145,6 @@ class Qubit {
         // revert to standard wire
         this._wire.style.background = 'black';
         this._wire.style.borderImage = 'none';
-        this._bitPositions = '';
 
         // search for a measurement gate
         for (let i = 0; i < this._gates.length; i++){
@@ -139,9 +153,12 @@ class Qubit {
                 // take into consideration only the first one. 
                 // Subsequent measurement gates have no effect on the wire style.
                 this.turnToBit(i);
-                break;
+                return;
             }
         }
+        // if no measurement gates were found, clean the bitposition lookup
+        // in case of leftover elements.
+        this._bitPositions = '';
     }
     /**
      * Turn the qubit wire to double from given position onward.
@@ -161,16 +178,25 @@ class Qubit {
     }
     /**
      * Informs whether the qubit has collapsed at given position.
+     * If the given index is larger than the length, it is assumed the current bitPositions string
+     * continues with the last element ad infinitum.
      * @param {*} pos The position of the qubit to test.
      * @returns True if the position is valid and the wire is double on it.
      */
     isPositionBit (pos) {
-        if (pos < this._bitPositions.length && this._bitPositions[pos] === 'b')
-            return true;
-        else 
-            // if the asked position is out of bounds, assume bit/qubit state mimics
-            // the last one recorded, up to infinity
-            return this._bitPositions.slice(-1) === 'b';
+        const index = pos < this._bitPositions.length ? pos : -1;
+        return this._bitPositions.at(index) === 'b';
+    }
+    /**
+     * Returns the index the given gate occupies on this qubit.
+     * @param {*} gate The gate to indecize.
+     * @returns Index-like integer if found; null otherwise.
+     */
+    argfindGate (gate) {
+        for (let i = 0; i < this.weight; i++) if (this.gates[i] === gate) 
+            return i;
+
+        return null;
     }
     /**
      * Attach the given gate to this wire, shifting the current gate layout as needed.

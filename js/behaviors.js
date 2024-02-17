@@ -1,5 +1,4 @@
 import * as Functions from './functions.js';
-import * as Constants from './constants.js';
 import * as Alerts from './alerts.js';
 import { circuit } from './main.js';
 import { Circuit } from './circuit.js';
@@ -160,16 +159,6 @@ export function handleDragNdrop (gate) {
             // attach the gate ontop the wire
             circuit.attachGateToQubit(gate, qubit, relativePosition);
             snapped = true;
-            
-            // feed this same behavior to the newly created gate.
-            // avoid infinite recursion and multiple identical event listeners
-            // by blocking old created gates.
-            if (!gate.hasDragNdrop) {
-                gate.body.addEventListener('mousedown', (event) => {
-                    if (event.button === 0) handleDragNdrop(gate);
-                });
-                gate.hasDragNdrop = true;
-            }
         }
 
         // if not attached to any wire, kill gate
@@ -425,4 +414,92 @@ export function fastDeleteGate (event, gate) {
     circuit.detachGateFromQubit(gate, gate.owner);
     gate.erase();
     circuit.refresh();
+}
+
+/**
+ * Summon a copy of the shift clicked gate one step to its right
+ * (on the same qubit).
+ * @param {*} e The mouse event that proc-ed this action.
+ * @param {*} gate The gate to be copied.
+ */
+export function fastCopyGate (e, gate) {
+    if (!e.shiftKey) return;
+
+    const qubit = circuit.getQubit(gate.owner);
+
+    for (let i = 0; i < qubit.weight; i++) 
+        if (qubit.gates[i] === gate) { 
+            circuit.saveSnapshot();
+            const copy = new Gate(document.getElementById(gate.type));
+            // summon a new column for the new gate
+            circuit.attachGateToQubit(copy, qubit, i + 0.5);
+            circuit.refresh();
+            return;
+        }
+}
+
+/**
+ * Clean-wipe the circuit and return it to the default
+ * state.
+ */
+export function handleClear () {
+    // save current state
+    circuit.saveSnapshot();
+
+    // wipe the circuit
+    circuit.empty();
+    Gate.resetCounters();
+
+    for (const qubit of circuit.qubits) {
+        qubit.state.textContent = '|0〉';
+        qubit.registerColor = '';
+    }
+    circuit.updateRegisterBorders();
+    circuit.refreshStatCounters();
+}
+
+/**
+ * Summon the execution modal if the circuit is valid.
+ */
+export function handleRunButton () {                      
+    // deny execution if nan exponent was found           
+    if (Gate.erroredGates > 0) {
+        Alerts.alertErrorsOnCircuit();
+        return;
+    }
+    // enable widgets in new modal
+    disableModalWidgets(false);
+    // summon modal window
+    modal.style.display = 'flex';
+}
+
+/**
+ * Test the powered gate for validity. The gate passes the
+ * test iff it has an evaluatable exponent and it doesnt currently
+ * sit ontop of a bit.
+ * @param {*} gate The examined gate.
+ * @param {*} value The value of its exponent.
+ */
+export function handleExponential (gate, value, parent, pos) {
+    // remove previous labels
+    gate.unmakeErrored(); 
+    
+    // locate parent and position on parent (if not given)
+    parent = parent || circuit.getQubit(gate.owner); 
+    pos = pos > -1 ? pos : parent.argfindGate(gate);
+
+    // empty values and powers on bits get eliminated
+    if (value === '' ||
+        (pos !== null && gate.type !== 'nthZGate' && parent.isPositionBit(pos))
+    )
+        gate.makeErrored();
+    else try {
+        math.evaluate(value);
+    }
+    catch (error) {
+        // unevaluatable values get eliminated
+        gate.makeErrored();
+    }
+    // handle run button based on context
+    Functions.toggleRunButton();
 }

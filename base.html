@@ -13,8 +13,8 @@
             <div class="qubit-canvas" id="canvas">
                 <div class="qubit-container" id="templateQubit" style="display: none;">
                     <div class="qubit-option-container">
-                        <button class="qubit-option">+</button>
-                        <button class="qubit-option">x</button>
+                        <button class="qubit-option" title="Add new qubit above">+</button>
+                        <button class="qubit-option" title="Delete qubit">x</button>
                     </div>
                     <div class="qubit-state">|0〉</div>
                     <div class="qubit-wire"></div>
@@ -115,7 +115,7 @@
                     <div class="toolbox-title"><hr></div>
                     <div class="run-button-container">
                         <!-- Run button -->
-                        <button class="run-button" id="runButton" title="Prepare the circuit for execution">
+                        <button class="run-button" id="runButton" title="Prepare the circuit for execution (CTRL + X)">
                             Run Circuit
                         </button> 
                     </div>
@@ -135,14 +135,14 @@
                     </div>
                     <!-- Clear button -->
                     <div class="help-buttons-container">
-                        <button class="long-button" id="clearButton" title="Revert the circuit back to 2 empty qubits">
+                        <button class="long-button" id="clearButton" title="Revert the circuit back to 2 empty qubits (CTRL + C)">
                             Clear
                         </button> 
                     </div>
                     <div class="help-buttons-container">
                         <input type="file" id="fileInput" style="display: none">
                         <!-- Import button -->
-                        <button class="small-button" id="importButton" title="Import from JSON...">
+                        <button class="small-button" id="importButton" title="Import from JSON... (CTRL + SHIFT + S)">
                             Import
                         </button> 
                         <!-- Export button -->

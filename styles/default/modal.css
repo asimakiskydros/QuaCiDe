@@ -309,10 +309,13 @@
     padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
-    width: 35px;
-    height: 35px;
+    width: 30px;
+    height: 30px;
     transition: border 0.2s;
     margin-right: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* The option represented by the button is projected with images.

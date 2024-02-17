@@ -1,7 +1,8 @@
 import * as Constants from './constants.js';
-import * as Behaviors from './behaviors.js';
 import { Qubit } from './qubit.js';
 import { Gate } from './gate.js';
+import { toggleRunButton } from './functions.js';
+import { handleExponential } from './behaviors.js';
 
 // tools
 const canvas = document.getElementById('canvas');
@@ -9,11 +10,10 @@ const identityGate = document.getElementById('identityGate');
 let undoStack = [], redoStack = [];
 
 // lookup tables
-const controllyGates = ['controlGate', 'anticontrolGate'];
+const controllyGates  = ['controlGate', 'anticontrolGate'];
 const nongenericGates = ['identityGate', 'measurementGate'];
-const connectorTypes = ['control-wire', 'swap-wire'];
-const poweredGates = ['nthXGate', 'nthYGate', 'nthZGate'];
-const errorableGates = ['swapGate', 'hGate', 'nthXGate', 'nthYGate'];
+const connectorTypes  = ['control-wire', 'swap-wire'];
+const poweredGates    = ['nthXGate', 'nthYGate', 'nthZGate'];
 
 class Circuit {
     constructor(startingQubits) {
@@ -468,19 +468,6 @@ class Circuit {
                     powerBox.value = parts[1];
                     powerBox.style.pointerEvents = 'auto';
                 }
-                
-                // remove the border from gates with custom texture               
-                copy.banishBorder();
-
-                // feed dragNdrop behavior to new gates
-                copy.body.addEventListener('mousedown', () => {
-                    Behaviors.handleDragNdrop(copy);
-                });
-                copy.hasDragNdrop = true;
-                // feed fast delete
-                copy.body.addEventListener('contextmenu', (event) => { 
-                    Behaviors.fastDeleteGate(event, copy)
-                });
             }
         }
         this.refresh();
@@ -578,23 +565,25 @@ class Circuit {
         this.#updateColumns();
         // remove previous errors
         for (const qubit of this._qubits) for (const gate of qubit.gates)
-            if (gate.errored) gate.unmakeErrored();
+            gate.unmakeErrored();
 
         // check all gates for correctness
         for (let i = 0; i < this._columns; i++) {
             const swaps = [];
-            for (const qubit of this._qubits) {
+            for (const qubit of this._qubits) if (i < qubit.weight) {
                 // count the swaps present on given column/step
-                if (i < qubit.weight && qubit.gates[i].type == 'swapGate')
+                if (qubit.gates[i].type === 'swapGate')
                     swaps.push(qubit.gates[i]);
-                // if the examined gate is not a swap, but is errorable
-                // then immediately turn it red.
-                else if (
-                    i < qubit.weight && 
-                    errorableGates.includes(qubit.gates[i].type) &&
-                    qubit.isPositionBit(i)
-                )
+                // if the examined gate is a hadamard ontop of a bit then immediately turn it red.
+                else if (qubit.gates[i].type === 'hGate' && qubit.isPositionBit(i))
                     qubit.gates[i].makeErrored();
+                // if the examined gate is a power, handle it differently
+                else if (poweredGates.includes(qubit.gates[i].type))
+                    handleExponential(
+                        qubit.gates[i],
+                        qubit.gates[i].body.querySelector('.textbox').value,
+                        qubit, i
+                    );
             }
             // only exactly 2 swaps can be present at each column, or none at all
             if (swaps.length === 2) {
@@ -608,15 +597,7 @@ class Circuit {
             }
         }
         // live-enable/disable runButton based on context
-        const runButton = document.getElementById('runButton');
-        if (Gate.erroredGates > 0) {
-            runButton.disabled = true;
-            runButton.title = 'The circuit contains errored gates!';
-        }
-        else {
-            runButton.disabled = false;
-            runButton.title = 'Prepare the circuit for execution';
-        }
+        toggleRunButton();
     }
     static getControllyGates () {
         return controllyGates;

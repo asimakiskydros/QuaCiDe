@@ -10,3 +10,6 @@ export function alertNoMeasuring () {
 export function alertNaNinPoweredGate () {
     alert('Execution thwarted; Not-a-Number detected inside powered gate.');
 }
+export function alertErrorsOnCircuit () {
+    alert('Execution thwarted; your circuit contains errored gates.');
+}

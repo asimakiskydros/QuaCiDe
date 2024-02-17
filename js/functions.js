@@ -1,4 +1,5 @@
-import * as Constants from './constants.js'
+import * as Constants from './constants.js';
+import { Gate } from './gate.js';
 
 /**
      * Find the qubit currently hovered (if any) and indexize the left-coordinate of the mouse
@@ -123,4 +124,20 @@ export function createPlotCanvas (id, height, width) {
  */
 export function assert (condition, message) { 
     if (!condition) throw 'Assertion promise breached' (message ? ':' + message : '');
+}
+
+/**
+ * Enable/Disable the run button based on whether 
+ * errored gates currently exist on the circuit.
+ */
+export function toggleRunButton () {
+    const runButton = document.getElementById('runButton');
+    if (Gate.erroredGates > 0) {
+        runButton.disabled = true;
+        runButton.title = 'The circuit contains errored gates!';
+    }
+    else {
+        runButton.disabled = false;
+        runButton.title = 'Prepare the circuit for execution (CTRL + X)';
+    }
 }

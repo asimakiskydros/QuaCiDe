@@ -1,7 +1,6 @@
 import { STARTING_QUBITS } from './constants.js';
 import { Circuit } from './circuit.js';
 import { Gate } from './gate.js';
-import { alertNaNinPoweredGate } from './alerts.js';
 import * as Behaviors from './behaviors.js';
 
 // initialize circuit
@@ -10,7 +9,7 @@ export const circuit = new Circuit(STARTING_QUBITS);
 export const toolbox = document.querySelectorAll('.gate');
 
 document.addEventListener('DOMContentLoaded', function () {
-    toolbox.forEach(gate => {
+    for (const gate of toolbox) {
         /**
          * On clicking a gate positioned on the toolbox,
          * spawn an exact copy and feed it drag and drop
@@ -21,13 +20,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (e.button !== 0) return;
 
             const copy = new Gate(gate);
+            // this is needed the first time to move the newly created gate appropriately. idk why
+            Behaviors.handleDragNdrop(copy);
             // move copy to cursor
             copy.move(e.clientX, e.clientY);
-            
-            // feed dragNdrop
-            Behaviors.handleDragNdrop(copy);
-            // feed fast delete
-            copy.body.addEventListener('contextmenu', (event) => { Behaviors.fastDeleteGate(event, copy)});
         });
         /**
          * On hovering a gate on the toolbox, show correct
@@ -45,28 +41,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const contextMenu = document.getElementById(gate.id + 'Context');
             contextMenu.style.display = 'none';
         })
-    });
+    }
     
     /**
      * Wipe the circuit clean on clicking the 'Clear' button
      * inside the toolbox. Sets all kets to ground state and
      * removes all register colors.
      */
-    document.getElementById('clearButton').addEventListener('click', () => {
-        // save current state
-        circuit.saveSnapshot();
-
-        // wipe the circuit
-        circuit.empty();
-        Gate.resetCounters();
-
-        for (const qubit of circuit.qubits) {
-            qubit.state.textContent = '|0〉';
-            qubit.registerColor = '';
-        }
-        circuit.updateRegisterBorders();
-        circuit.refreshStatCounters();
-    })
+    document.getElementById('clearButton').addEventListener('click', Behaviors.handleClear);
 
     /**
      * Export relevant circuit info to .JSON on clicking
@@ -98,18 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * Make the main UI uninteractable and invoke the pre-execution modal
      * on clicking the 'Run Circuit' button.
      */
-    document.getElementById('runButton').addEventListener('click', () => {
-        // deny execution if nan exponent was found
-        if (!circuit.checkExponentsOnGates()) {
-            alertNaNinPoweredGate();
-            return;
-        }
-        // enable widgets in new modal
-        Behaviors.disableModalWidgets(false);
-        // summon modal window
-        Behaviors.modal.style.display = 'flex';
-        document.body.style.overflowY = 'hidden';
-    });
+    document.getElementById('runButton').addEventListener('click', Behaviors.handleRunButton);
 
     /**
      * Clicking outside the modal's borders assumes the user wants to exit it
@@ -118,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function () {
     Behaviors.modal.addEventListener('click', (e) => {
         if (e.target === Behaviors.modal) 
             Behaviors.modal.style.display = 'none';
-
     });
 
     /**
@@ -146,32 +116,25 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('executeButton').addEventListener('click', Behaviors.handleExecution);
 
     /**
-     * When right-clicking over a ket state, its border shuffles between colors.
-     * Neighboring kets with same-colored borders get unified into a single register.
-     * If right-clicking anywhere else, return only default behavior (simple context menu).
-     */
-    document.addEventListener('contextmenu', () => {
-        for (const qubit of circuit.qubits)
-            if (qubit.state.matches(':hover'))
-                circuit.updateRegisterBorders();
-    });
-
-    /**
      * Cancel the youngest action taken and revert the state of the circuit accordingly.
      */
-    document.getElementById('undoButton').addEventListener('click', () => { circuit.loadPreviousSnapshot(); });
+    document.getElementById('undoButton').addEventListener('click', circuit.loadPreviousSnapshot);
 
     /**
      * Take back the youngest undo action and bring the circuit to the state it was before.
      */
-    document.getElementById('redoButton').addEventListener('click', () => { circuit.loadNextSnapshot(); });
+    document.getElementById('redoButton').addEventListener('click', circuit.loadNextSnapshot);
 
     /**
      * Add keyboard shortcuts for common actions.
      */
     document.addEventListener('keydown', (e) => {
-        // if the modal is up prohibit these actions
-        if (Behaviors.modal.style.display !== 'none') return;
+        // if the modal is up allow only modal-specific actions
+        if (Behaviors.modal.style.display !== 'none') {
+            // Escape -> close modal
+            if (e.key === 'Escape') Behaviors.modal.style.display = 'none';
+            return;            
+        }
 
         if (e.ctrlKey && e.shiftKey && (e.key === 'z' || e.key === 'Z'))
             // CTRL + SHIFT + Z -> Redo
@@ -182,10 +145,25 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (e.ctrlKey && (e.key === 'z' || e.key === 'Z'))
             // CTRL + Z -> Undo
             circuit.loadPreviousSnapshot();
+        else if (e.ctrlKey && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+            // CTRL + SHIFT + S -> Import
+            e.preventDefault();
+            document.getElementById('fileInput').click();
+        }
         else if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             // CTRL + S -> Export
             e.preventDefault();
             Behaviors.exportToJSON();
+        }
+        else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+            // CTRL + C -> Clear
+            e.preventDefault();
+            Behaviors.handleClear();
+        }
+        else if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
+            // CTRL + X -> Run
+            e.preventDefault();
+            Behaviors.handleRunButton();
         }
     });
 });
