@@ -31,6 +31,7 @@ class Gate {
         this._type = other.id;
         this._errored = false;
         this._pair = '';
+        this._powerBox = this._body.querySelector('.textbox');
 
         // if this is an identity gate, dont project it at all
         if (this._type === 'identityGate') { 
@@ -41,17 +42,15 @@ class Gate {
         if (this._type === 'measurementGate') placedMeasurementGates++;
 
         // make errored on invalid exponential
-        if (['nthXGate', 'nthYGate', 'nthZGate'].includes(this._type)) {
-            const inputBox = this._body.querySelector('.textbox');
-            inputBox.addEventListener('input', () => { Behaviors.handleExponential(this, inputBox.value); });
-        }
+        if (this._powerBox)
+            this._powerBox.addEventListener('input', () => { Behaviors.handleExponential(this, this._powerBox.value); });
 
         // remove the border from gates with custom texture               
         this.banishBorder();
 
         // feed dragNdrop behavior to new gates
         this._body.addEventListener('mousedown', (e) => { 
-            if (e.shiftKey || e.button !== 0) return;
+            if (e.ctrlKey || e.shiftKey || e.button !== 0) return;
             Behaviors.handleDragNdrop(this); 
         });
         // feed fast delete
@@ -77,6 +76,15 @@ class Gate {
     }
     get pair () {
         return this._pair;
+    }
+    get stamp () {
+        let stamp = this._type;
+        if (this._powerBox && this._powerBox.value) 
+            stamp += '<!@DELIMITER>' + this._powerBox.value; 
+        return stamp;
+    }
+    get powerBox () {
+        return this._powerBox;
     }
     static get placedMeasurementGates () {
         return placedMeasurementGates;

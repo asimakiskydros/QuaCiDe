@@ -60,7 +60,7 @@ class Qubit {
         for (const option of this._body.querySelectorAll('.qubit-option'))
             switch (option.textContent) {
                 case '+':
-                    option.addEventListener('click', () => { circuit.prependQubit(this); });
+                    option.addEventListener('click', () => { circuit.prependQubit(circuit.argfindQubit(this)); });
                     break;
                 case 'x':
                     option.addEventListener('click', () => { circuit.removeQubit(this); });

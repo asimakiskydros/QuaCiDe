@@ -16,6 +16,7 @@ The UI offers a variety of user-friendly actions:
 * Clear the circuit through the `Clear` button or by pressing `CTRL + c`.
 * `Left-click` on placed gates to move them around, `Right-click` them to delete them instantly.
 * `SHIFT + Left-click` on placed gates to spawn a copy next to them.
+* `CTRL + Left-click` on placed gates to spawn a copy below them.
 * Spawn new steps by shoving dragged gates in-between existing steps.
 * Empty steps are deleted automatically.
 * Add desired exponents to input-armed gates.
@@ -26,7 +27,7 @@ The UI offers a variety of user-friendly actions:
 * See circuit-relevant stats, like `#qubits`, `#gates`, `#steps`, on the live counters.
 * Export the current circuit layout as JSON by pressing the `Export` button or `CTRL + s`.
 * Import new circuit layout from valid JSON through the `Import` button or by pressing `CTRL + SHIFT + s`.
-* Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z` or `CTRL + y` respectively.
+* Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z`/`CTRL + y` respectively.
 * Press `Run Circuit` or `CTRL + x` to summon the execution modal.
 * Exit the modal by clicking outside of it or by pressing `Esc`.
 * Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.

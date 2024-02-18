@@ -84,14 +84,13 @@ class Circuit {
         this.refreshStatCounters();
     }
     /**
-     * Create a new empty qubit just above the given one.
+     * Create a new qubit just above the given one.
      * Note that newly created qubits obey the minimizer, therefore
      * empty ones past the qubit limit will be discarded immediately.
-     * @param {*} qubit The qubit, above which a new one will be spawned.
+     * @param {*} i The qubit index to spawn a new qubit.
+     * @param {*} gates (Optional) The starting gates list for the new qubit.
      */
-    prependQubit (qubit) {
-        const i = this.argfindQubit(qubit);
-
+    prependQubit (i, gates) {
         if (i !== 0 && !i) return;
 
         // save current layout
@@ -105,7 +104,7 @@ class Circuit {
             template[j + 1] = template[j];
 
         // paste the new empty position on index i
-        template[i] = { state: '|0〉', color: '', gates: [] };
+        template[i] = { state: '|0〉', color: '', gates: gates || [] };
         template.length++;
         
         // build the new template
@@ -463,10 +462,9 @@ class Circuit {
                 this._qubits[i].attachGate(copy);
 
                 // write the power of the gate in the input box if that applies
-                const powerBox = copy.body.querySelector('.textbox');
-                if (powerBox && parts.length > 1) {
-                    powerBox.value = parts[1];
-                    powerBox.style.pointerEvents = 'auto';
+                if (copy.powerBox && parts.length > 1) {
+                    copy.powerBox.value = parts[1];
+                    copy.powerBox.style.pointerEvents = 'auto';
                 }
             }
         }
@@ -485,13 +483,8 @@ class Circuit {
         for (let i = 0; i < this._qubits.length; i++) {
             // collect all gates as strings
             const gates = [];
-            for (const gate of this._qubits[i].gates) {
-                let stamp = gate.type;
-                // include the specified power of the gate if that applies
-                const powerBox = gate.body.querySelector('.textbox');
-                if (powerBox && powerBox.value) stamp += '<!@DELIMITER>' + powerBox.value; 
-                gates.push(stamp);
-            }
+            for (const gate of this._qubits[i].gates) gates.push(gate.stamp);
+
             // add relevant qubit information to template slot
             template[i] = { state: this._qubits[i].state.textContent,
                             color: this._qubits[i].registerColor,
@@ -535,24 +528,6 @@ class Circuit {
         undoStack.push(this.makeTemplate());
     }
     /**
-     * Tests all powered gates for valid exponents. A valid exponent
-     * contains only arithmetical operations.
-     * @returns True if no exponents where found containing NaN.
-     */
-    checkExponentsOnGates () {
-        for (const qubit of this._qubits)
-            for (const gate of qubit.gates)
-                if (poweredGates.includes(gate.type))
-                    try{
-                        math.evaluate(gate.body.querySelector('.textbox').value);
-                    }
-                    catch (error) {
-                        return false;  
-                    }  
- 
-        return true;
-    }
-    /**
      * Scans the circuit for errored gates and marks them.
      * 
      * Currently, a gate is errored if:
@@ -571,25 +546,26 @@ class Circuit {
         for (let i = 0; i < this._columns; i++) {
             const swaps = [];
             for (const qubit of this._qubits) if (i < qubit.weight) {
+                const bitState = qubit.isPositionBit(i);
                 // count the swaps present on given column/step
                 if (qubit.gates[i].type === 'swapGate')
-                    swaps.push(qubit.gates[i]);
+                    swaps.push([qubit.gates[i], bitState]);
                 // if the examined gate is a hadamard ontop of a bit then immediately turn it red.
-                else if (qubit.gates[i].type === 'hGate' && qubit.isPositionBit(i))
+                else if (qubit.gates[i].type === 'hGate' && bitState)
                     qubit.gates[i].makeErrored();
                 // if the examined gate is a power, handle it differently
                 else if (poweredGates.includes(qubit.gates[i].type))
                     handleExponential(
                         qubit.gates[i],
-                        qubit.gates[i].body.querySelector('.textbox').value,
+                        qubit.gates[i].powerBox.value,
                         qubit, i
                     );
             }
             // only exactly 2 swaps can be present at each column, or none at all
             if (swaps.length === 2) {
                 // make each other's pair
-                swaps[0].pair = `${swaps[1].owner}<!@DELIMITER>${i}`;
-                swaps[1].pair = `${swaps[0].owner}<!@DELIMITER>${i}`;
+                swaps[0][0].pair = `${swaps[1][0].owner}<!@DELIMITER>${i}<!@DELIMITER>${swaps[1][1]}`;
+                swaps[1][0].pair = `${swaps[0][0].owner}<!@DELIMITER>${i}<!@DELIMITER>${swaps[0][1]}`;
             }
             else for (const gate of swaps) {
                 gate.pair = '';

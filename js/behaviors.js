@@ -44,8 +44,7 @@ export function handleDragNdrop (gate) {
 
         // disable the nth-power input box when dragging
         // (relevant for nth-power gates)
-        const powerInputBox = gate.body.querySelector('.textbox');
-        if (powerInputBox) powerInputBox.style.pointerEvents = 'none';
+        if (gate.powerBox) gate.powerBox.style.pointerEvents = 'none';
 
         // delete unused double wires
         circuit.qubits.forEach(qubit => {qubit.scanForMeasurement(gate)});
@@ -142,8 +141,7 @@ export function handleDragNdrop (gate) {
         let snapped = false;
 
         // re-enable the input power box for the nth-power gates
-        const powerInputBox = gate.body.querySelector('.textbox');
-        if (powerInputBox) powerInputBox.style.pointerEvents = 'auto';
+        if (gate.powerBox) gate.powerBox.style.pointerEvents = 'auto';
 
         // remove the border of a placed gate
         if(['xGate', 'swapGate', 'controlGate', 'anticontrolGate'].includes(gate.type))
@@ -402,7 +400,7 @@ export function handleExecution () {
  */
 export function fastDeleteGate (event, gate) {
     // activate only on left click
-    if (event.button !== 2) return;
+    if (event.shiftKey || event.ctrlKey || event.button !== 2) return;
 
     // hide default context menu box
     event.preventDefault();
@@ -418,24 +416,39 @@ export function fastDeleteGate (event, gate) {
 
 /**
  * Summon a copy of the shift clicked gate one step to its right
- * (on the same qubit).
+ * on the same qubit (SHIFT click) or one qubit below on the same step
+ * (CTRL click).
  * @param {*} e The mouse event that proc-ed this action.
  * @param {*} gate The gate to be copied.
  */
 export function fastCopyGate (e, gate) {
-    if (!e.shiftKey) return;
+    // activate only if either shift or ctrl key are pressed, not both
+    if (e.shiftKey == e.ctrlKey) return;
 
     const qubit = circuit.getQubit(gate.owner);
+    if (!qubit) return;
+    const i = qubit.argfindGate(gate);
+    if (i === null) return;
+    
+    if (e.shiftKey) {
+        circuit.saveSnapshot();
 
-    for (let i = 0; i < qubit.weight; i++) 
-        if (qubit.gates[i] === gate) { 
-            circuit.saveSnapshot();
-            const copy = new Gate(document.getElementById(gate.type));
-            // summon a new column for the new gate
-            circuit.attachGateToQubit(copy, qubit, i + 0.5);
-            circuit.refresh();
-            return;
-        }
+        // copy the gate along with its (potential) power
+        const copy = new Gate(document.getElementById(gate.type));
+        if (copy.powerBox) copy.powerBox.value = gate.powerBox.value;
+
+        // summon a new column for the new gate
+        circuit.attachGateToQubit(copy, qubit, i + 0.5);
+        circuit.refresh();
+    }
+    else if (e.ctrlKey) {
+        circuit.prependQubit(
+            // create a new qubit below the current one
+            circuit.argfindQubit(qubit) + 1, 
+            // pad the copied gate with as many identites beforehand as needed
+            Array.from({length: i}, () => 'identityGate').concat([gate.stamp])
+        );
+    }
 }
 
 /**
