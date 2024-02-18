@@ -568,8 +568,8 @@ class Circuit {
                 swaps[1][0].pair = `${swaps[0][0].owner}<!@DELIMITER>${i}<!@DELIMITER>${swaps[0][1]}`;
             }
             else for (const gate of swaps) {
-                gate.pair = '';
-                gate.makeErrored();
+                gate[0].pair = '';
+                gate[0].makeErrored();
             }
         }
         // live-enable/disable runButton based on context
