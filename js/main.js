@@ -87,8 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * and head back to the main UI.
      */
     Behaviors.modal.addEventListener('click', (e) => {
-        if (e.target === Behaviors.modal) 
-            Behaviors.modal.style.display = 'none';
+        if (e.target === Behaviors.modal) Behaviors.closeModal();
     });
 
     /**
@@ -98,16 +97,22 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('closeModal').addEventListener('click', Behaviors.closeModal);
 
     /**
-     * Change output slide to the Histogram plot on clicking the
-     * 'show Histogram' option inside the modal.
+     * Change output slide to the Counts histogram plot on clicking the
+     * 'show Counts' option inside the modal.
      */
-    document.getElementById('showHistButton').addEventListener('click', Behaviors.toggleHistogram);
+    document.getElementById('showCountsButton').addEventListener('click', () => { Behaviors.togglePlot('counts') });
 
     /**
-     * Change output slide to the Heatmap plot on clicking the
-     * 'show Heatmap' option inside the modal.
+     * Change output slide to the Amplitudes heatmap plot on clicking the
+     * 'show Amplitudes' option inside the modal.
      */
-    document.getElementById('showHeatButton').addEventListener('click', Behaviors.toggleHeatmap);
+    document.getElementById('showAmpsButton').addEventListener('click', () => { Behaviors.togglePlot('amplitudes') });
+
+    /**
+     * Change output slide to the Unitary matrix plot on clicking the 
+     * 'show Unitary' option inside the modal.
+     */
+    document.getElementById('showUnitaryButton').addEventListener('click', () => { Behaviors.togglePlot('unitary') });
 
     /**
      * Run the execution script on the described circuit with the given parameters
@@ -118,12 +123,12 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Cancel the youngest action taken and revert the state of the circuit accordingly.
      */
-    document.getElementById('undoButton').addEventListener('click', circuit.loadPreviousSnapshot);
+    document.getElementById('undoButton').addEventListener('click', () => { circuit.loadPreviousSnapshot(); });
 
     /**
      * Take back the youngest undo action and bring the circuit to the state it was before.
      */
-    document.getElementById('redoButton').addEventListener('click', circuit.loadNextSnapshot);
+    document.getElementById('redoButton').addEventListener('click', () => { circuit.loadNextSnapshot(); });
 
     /**
      * Add keyboard shortcuts for common actions.
@@ -132,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // if the modal is up allow only modal-specific actions
         if (Behaviors.modal.style.display !== 'none') {
             // Escape -> close modal
-            if (e.key === 'Escape') Behaviors.modal.style.display = 'none';
+            if (e.key === 'Escape') Behaviors.closeModal();
             return;            
         }
 

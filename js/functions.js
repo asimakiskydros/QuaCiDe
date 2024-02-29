@@ -141,3 +141,136 @@ export function toggleRunButton () {
         runButton.title = 'Prepare the circuit for execution (CTRL + X)';
     }
 }
+
+/**
+ * Plot the counts histogram plot on the given container
+ * based on the given results.
+ * @param {*} container The container to paint the plot in.
+ * @param {*} results The counts results of the experiment.
+ * @returns A reference to the created canvas object.
+ */
+export function createCountsPlot(container, results) {
+    const canvas = createPlotCanvas(
+        'canvasCounts', 
+        container.clientHeight,
+        container.clientWidth
+    );
+    container.appendChild(canvas);
+
+    Plotly.newPlot('canvasCounts', [{
+        x: Object.keys(results.counts),
+        y: Object.values(results.counts),
+        type: 'bar',
+        orientation: 'v',
+        marker: { color: 'lightgreen' }
+    }],{
+        title: 'Counts',
+        margin: { l: 50, r: 30, b: 50, t: 65, pad: 10 },
+        xaxis: {
+            autotypenumbers: 'strict',
+            tickangle: 60,
+    }});
+
+    return canvas;
+}
+
+/**
+ * Plot the amplitudes heatmap plot on the given container
+ * based on the given results.
+ * @param {*} container The container to paint the plot in.
+ * @param {*} results The calculated amplitudes of the experiment.
+ * @returns A reference to the created canvas object.
+ */
+export function createAmpsPlot(container, results) {
+    const canvas = createPlotCanvas(
+        'canvasAmps', 
+        container.clientHeight,
+        container.clientWidth
+    );
+    container.appendChild(canvas);
+
+    const [y, x, z, text] = data2heatmap(results.amplitudes, results.probabilites);
+
+    Plotly.newPlot('canvasAmps', [{
+        y: y.map(item => item + '_'),
+        x: x.map(item => '_' + item),
+        z: z,
+        hoverinfo: 'text',
+        text: text,
+        type: 'heatmap',
+        colorscale: 'Greens',
+        reversescale: true,
+        xgap: 5,
+        ygap: 5,
+        zmin: 0,
+        zmax: 1
+    }], {
+        title: 'Amplitude matrix',
+        hoverlabel: { align: 'left' },
+        margin: { l: 50, r: 30, b: 50, t: 65, pad: 10 },
+        yaxis: { autotypenumbers: 'strict', },
+        xaxis: { autotypenumbers: 'strict',
+                tickangle: 90,             },
+    });
+
+    return canvas;
+}
+
+/**
+ * Plot the unitary matrix plot on the given container
+ * based on the given results.
+ * @param {*} container The container to paint the plot in.
+ * @param {*} results The unitary matrix of the experiment.
+ * @returns A reference to the created canvas object.
+ */
+export function createUnitaryPlot(container, results) {
+    const canvas = createPlotCanvas(
+        'canvasUnitary', 
+        container.clientHeight,
+        container.clientWidth
+    );
+    container.appendChild(canvas);
+
+    Plotly.newPlot('canvasUnitary', [{
+        z: results.unitary_squares,
+        hoverinfo: 'text',
+        text: results.unitary,
+        type: 'heatmap',
+        colorscale: 'Greens',
+        showscale: false,
+        reversescale: true,
+        xgap: 5,
+        ygap: 5,
+        zmin: 0,
+        zmax: 1
+    }], {
+        title: 'Unitary matrix',
+        yaxis: { autorange: 'reversed'},
+        margin: { l: 50, r: 30, b: 50, t: 65, pad: 10 },
+    }, {
+        modeBarButtonsToAdd: [{
+            name: 'downloadMatrix',
+            icon: Plotly.Icons.disk,
+            click: () => {
+                const blob = new Blob(
+                    // jsonify the unitary matrix, remove the "" characters
+                    // and change line for each new row
+                    [JSON.stringify(results.unitary).replace(/"/g, '').replace(/\],/g, '],\n ')],
+                    { type: 'text/plain' }
+                );
+                const url = URL.createObjectURL(blob);
+
+                // Create a temporary link element and trigger the download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'unitary_matrix.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }]
+    });
+
+    return canvas;
+}

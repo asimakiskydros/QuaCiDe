@@ -84,47 +84,30 @@
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Bottom section of the modal toolbox.
-   Desc: lightgray square, marginalized
-         from every side, positioned
-         on the bottom right of the modal.      
+/* Extra options for counts plot (listbox, shots).
+   Desc: centered, marginalized from every side,
+         justified to the end of the flexbox.
 */
-.modal-buttons-container {
-    margin: 10px;
-    position: absolute;
-    width: 200px;
-    height: 200px;
-    bottom: 0;
-    right: 0;
-    background-color: lightgray;
-}   
-
-/* Top row of divs.
-   Desc: centered, marginalized from the top and left.
-*/
-.modal-buttons-top-section {
+.modal-counts-extra-option {
     position: relative;
-    margin-top: 10px;
-    left: 5%;
-    justify-content: center;
-    align-items: center;
+    margin: 5px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 /* Bottom row of divs.
-   Desc: centered, lightly marginalized from the left
-         and heavily from the top.
+   Desc: centered, marginalized from the top.
 */
-.modal-buttons-bottom-section {
+.modal-buttons-container {
     position: relative;
-    margin-top: 85px;
-    left: 5%;
-    justify-content: center;
-    align-items: center;
+    display: grid;
+    place-items: center;
+    margin-top: 110px;
 }
 
 /* Modal toolbox buttons.
    Desc: smaller but fairly identical copy
-         of the long help button.
+         of the long help button, marginalized from the top.
 */
 .modal-button {
     background-color: rgb(165, 159, 159);
@@ -137,6 +120,8 @@
     width: 180px;
     height: 45px;
     transition: border 0.2s;
+    display: block;
+    margin-top: 10px;
 }
 
 /* Summon border on hover to highlight interactability.
@@ -152,18 +137,19 @@
     cursor: not-allowed;
 }
 
-/* Top section of the modal toolbox.
-   Desc: long lightgray rectangle,
-         marginalized from every side.
+/* Modal toolbox.
+   Desc: long lightgray rectangle, covers most
+         of the length of the modal, curved edges.
 */
-.modal-listboxes-container {
+.modal-toolbox {
     margin: 10px;
     position: absolute;
     width: 200px;
-    height: 280px;
+    height: 96%;
     top: 0;
     right: 0;
     background-color: lightgray;
+    border-radius: 5px;
 }
 
 /* Listbox texture.
@@ -174,11 +160,14 @@
     position: relative;
     display: inline-block;
     overflow: hidden;
-    width: 180px;
-    height: 40px;
+    width: 100px;
+    height: 30px;
     border-radius: 10px;
     border: none;
     background-color: rgb(165, 159, 159);
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 15px;
+    cursor: pointer;
 }
 
 /* Make listbox opaque and uninteractable when disabled.
@@ -200,18 +189,12 @@
     border: none;
     outline: none;
     background: transparent;
-    cursor: pointer;
-    font-size: 16px;
-    font-family: 'Times New Roman', Times, serif;
     border-radius: 10px;
 }
 
 /* Listbox customization after selection.
-   Desc: custom pointing down arrow to 
-         highlight droplist support.
 */
 .modal-listbox::after{
-    content: '⮟'; 
     position: absolute;
     top: 50%;
     right: 10px;
@@ -224,8 +207,8 @@
          as buttons, small black letters in global font.
 */
 .modal-textbox {
-    width: 175px;
-    height: 39px;
+    width: 95px;
+    height: 27px;
     border-radius: 10px;
     border: 1px solid rgb(165, 159, 159);
     background-color: rgb(165, 159, 159);
@@ -249,13 +232,29 @@
     outline: none;
 }
 
+/* Plot kind checkbox.
+   Desc: green background.
+*/
+.modal-checkbox {
+    accent-color: green;
+}
+
+/* Make checkboxes opaque and uninteractable when disabled.
+*/
+.modal-checkbox[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Title for the many widgets present in the modal.
-   Desc: same sized letters as the buttons, black, bold.
+   Desc: same sized letters as the buttons, black, bold,
+         unhighlightable.
 */
 .modal-label {
     font-family: 'Times New Roman', Times, serif;
     font-size: 17px;
     font-weight: bold;
+    user-select: none;
 }
 
 /* The remaining area of the modal, excluding the toolbox.
@@ -289,33 +288,36 @@
 }
 
 /* List of plot options that appears after execution.
-   Desc: starting invisible, marginalized from the top
-         and left, positioned just below the output container.
+   Desc: marginalized from all sides, 
+         positioned just below the output container,
+         dynamically center justified.
 */
 .modal-options-section {
     position: relative;
-    margin-top: 10px;
-    left: 40%;
+    margin: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Super-small option button.
-   Desc: mini version of the help buttons.
+   Desc: mini version of the help buttons,
+         marginalized from every side, inline.
 */
 .modal-option-button {
     background-color: rgb(165, 159, 159);
     color: black;
     font-weight: bold;
     border: none;
-    padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
     width: 30px;
     height: 30px;
     transition: border 0.2s;
-    margin-right: 5px;
-    display: flex;
-    align-items: center;
+    margin: 5px;
+    display: inline-block;
     justify-content: center;
+    align-items: center;
 }
 
 /* The option represented by the button is projected with images.

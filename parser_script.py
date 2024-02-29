@@ -1,4 +1,5 @@
-from qiskit import Aer, QuantumCircuit, execute
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import Aer
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from sympy import sympify
@@ -13,16 +14,26 @@ CORS(app)
 @app.route('/parser', methods=['POST'])
 @cross_origin()
 def run_simulation():
+    counts, amplitudes, probabilites, unitary, unitary_squares = None, None, None, None, None    
     template = request.get_json()
-    counts = calculate_counts(template)
-    amplitudes = calculate_amplitudes(template)
-    probabilites = np.round(np.abs(amplitudes) ** 2, 4)
+
+    gate_matrix_measured = get_gate_matrix(template)
+    gate_matrix_unmeasured = get_gate_matrix(template, ignore = 'measurementGate')
+    initial_state = get_initial_state(template)
+
+    if template.get('includeCounts'):
+        counts = calculate_counts(template, gate_matrix_measured, initial_state)
+    if template.get('includeAmps'):
+        amplitudes, probabilites = calculate_amplitudes(template, gate_matrix_unmeasured, initial_state)
+    if template.get('includeUnitary'):
+        unitary, unitary_squares = calculate_unitary(template, gate_matrix_unmeasured)
     
     return jsonify({
         'counts': counts,
-        # remove any unnecessary parentheses
-        'amplitudes': [el.replace('(', '').replace(')', '') for el in amplitudes.astype(str).tolist()],
-        'probabilites': probabilites.tolist()
+        'amplitudes': amplitudes,
+        'probabilites': probabilites,
+        'unitary': unitary,
+        'unitary_squares': unitary_squares
     })
 
 
@@ -102,12 +113,13 @@ def create_gate(regulars: list, powers: list, swaps: list, column: list):
     return custom_gate.to_gate()
 
 
-def build_circuit(n_qubits: int, initial_state: str, gate_matrix: np.ndarray):
+def build_circuit(n_qubits: int, gate_matrix: np.ndarray, initial_state: str = None):
     """ Translates the gate matrix into a Quantum Circuit by turning
         each column into a gate and appending it to the circuit.
     """
     qc = QuantumCircuit(n_qubits, n_qubits)
-    qc.initialize(initial_state)
+    if initial_state is not None:
+        qc.initialize(initial_state)
 
     for col in gate_matrix.T:
         # merge the entire column into a single gate
@@ -131,14 +143,22 @@ def build_circuit(n_qubits: int, initial_state: str, gate_matrix: np.ndarray):
     return qc
 
 
-def calculate_counts(template: dict) -> dict:
+def execute(circuit: QuantumCircuit, backend, shots: int = None):
+    """ Transpiles the given circuit with the given backend
+        and then runs the experiment.
+    """
+    tqc = transpile(circuit, backend)
+    return backend.run(tqc, shots = shots)
+
+
+def calculate_counts(template: dict, gate_matrix: np.ndarray, initial_state: str) -> dict:
     """ Runs the given circuit on the specified backend, 'shots' times.
         Returns the dictionary of resulting counts.
     """
     circuit = build_circuit(
         template.get('length'),
-        get_initial_state(template),
-        get_gate_matrix(template)
+        gate_matrix,
+        initial_state
     )
     try:
         job = execute(
@@ -147,24 +167,64 @@ def calculate_counts(template: dict) -> dict:
             shots = template.get('shots')
         )
         return job.result().get_counts()        
-    except:
+    except Exception as e:
+        print(f'Exception raised at calculate_counts:\n {e}')
         # if the given circuit contains no measurement gates
         # or the given backend is faulty, there will be no counts
         return None
 
 
-def calculate_amplitudes(template) -> list:
+def calculate_amplitudes(template: dict, gate_matrix: np.ndarray, initial_state: str):
     """ Runs the given circuit on Statevector sim to extrapolate
-        theoretical probability amplitudes.
+        theoretical amplitudes and probabilites.
     """
     circuit = build_circuit(
         template.get('length'),
-        get_initial_state(template),
-        get_gate_matrix(template, ignore = 'measurementGate')
+        gate_matrix,
+        initial_state
     )
-    job = execute(circuit, Aer.get_backend('statevector_simulator'))
-    return job.result().get_statevector(circuit, 4).data
+    try:
+        job = execute(
+            circuit,
+            Aer.get_backend('statevector_simulator'),
+        )
+        amplitudes = job.result().get_statevector(circuit, 4).data
+        probabilities = np.round(np.abs(amplitudes) ** 2, 4).tolist()
+        # remove unnecessary parentheses
+        amplitudes = [el.replace('(', '').replace(')', '') for el in amplitudes.astype(str).tolist()]
 
+        return amplitudes, probabilities    
+    except Exception as e:
+        print(f'Exception raised at calculate_amplitudes:\n {e}')
+        return None, None
+
+
+def calculate_unitary(template: dict, gate_matrix: np.ndarray):
+    """ Runs the given circuit on Unitary sim without initializing
+        to extrapolate its entire unitary matrix.
+    """
+    circuit = build_circuit(
+        template.get('length'),
+        gate_matrix
+    )
+    try:
+        job = execute(
+            circuit, 
+            Aer.get_backend('unitary_simulator')
+        )
+        unitary = job.result().get_unitary().data
+        squares = np.round(np.abs(unitary) ** 2, 4).tolist()
+        # remove unnecessary parentheses
+        unitary = np.round(unitary, 4).astype(str).tolist()
+        for row in unitary:
+            for i, el in enumerate(row):
+                row[i] = el.replace('(', '').replace(')', '')
+        
+        return unitary, squares
+    except Exception as e:
+        print(f'Exception raised at calculate_unitary:\n {e}')
+        return None, None
+    
 
 if __name__ == '__main__':
     app.run()

@@ -1,15 +1,24 @@
 import * as Functions from './functions.js';
-import * as Alerts from './alerts.js';
-import { circuit } from './main.js';
-import { Circuit } from './circuit.js';
-import { Gate } from './gate.js';
-import { Qubit } from './qubit.js';
+import * as Alerts    from './alerts.js';
+import { circuit }    from './main.js';
+import { Circuit }    from './circuit.js';
+import { Gate }       from './gate.js';
+import { Qubit }      from './qubit.js';
 
 // modal buttons
-const selectParamsNote = document.getElementById('selectParamsDesc');
-const loadingCircle = document.getElementById('loadingCircleWidget');
-const lcDesc = document.getElementById('loadingCircleDesc');
-const optionsMenu = document.getElementById('optionsMenu');
+const selectParamsNote    = document.getElementById('selectParamsDesc');
+const loadingCircle       = document.getElementById('loadingCircleWidget');
+const lcDesc              = document.getElementById('loadingCircleDesc');
+const countsCheckbox      = document.getElementById('countsCheckbox');
+const ampsCheckbox        = document.getElementById('ampsCheckbox');
+const unitaryCheckbox     = document.getElementById('unitaryCheckbox');
+const countsOptionButton  = document.getElementById('showCountsButton');
+const ampsOptionButton    = document.getElementById('showAmpsButton');
+const unitaryOptionButton = document.getElementById('showUnitaryButton');
+const exeButton           = document.getElementById('executeButton');
+const backendList         = document.getElementById('backendList');
+const shotsBox            = document.getElementById('shotsInputBox');
+const checkboxes          = [countsCheckbox, ampsCheckbox, unitaryCheckbox];
 
 // fetch execution window modal
 export const modal = document.getElementById('setupModal');
@@ -17,7 +26,7 @@ export const modal = document.getElementById('setupModal');
 // div containers for the graphs
 const container = document.getElementById('outputContainer');
 
-let canvasHist, canvasHeat, abortController;
+let canvasCounts, canvasAmps, canvasUnitary, abortController;
 
 /**
  * Feeds drag and drop behavior to the given gate.
@@ -206,7 +215,7 @@ export function importFromJSON (event) {
 export function exportToJSON () {
     const template = circuit.makeTemplate();       
     const url = window.URL.createObjectURL(
-        new Blob([JSON.stringify(template)], { type: 'application/json' })
+        new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' })
     );
     const anchor = document.createElement('a');
     anchor.style.display = 'none';
@@ -229,48 +238,66 @@ export function exportToJSON () {
  * @param {boolean} state True to disable all important buttons.  
  */
 export function disableModalWidgets (state) {
-    [document.getElementById('executeButton'),
-     document.getElementById('backendList'),
-     document.getElementById('shotsInputBox')
-    ]
-    .forEach(widget => {widget.disabled = state;});
+    if (state) {
+        for (const widget of checkboxes) widget.disabeld = true;
+        exeButton.disabeld = true;
+        backendList.disabeld = true;
+        shotsBox.disabeld = true;
+    }
+    else {
+        exeButton.disabled = !checkboxes.some(cb => cb.checked);
+        backendList.disabeld = !countsCheckbox.checked;
+        shotsBox.disabled = !countsCheckbox.checked;
+    }
+}
+
+/**
+ * Remove current canvases if they are initialized.
+ */
+export function deletePlots () {
+    for (const canvas of [canvasCounts, canvasAmps, canvasUnitary])
+        if (canvas && container.contains(canvas)) container.removeChild(canvas);
+}
+
+/**
+ * Hide all plot buttons.
+ */
+export function vanishPlotButtons () {
+    for (const button of [countsOptionButton, ampsOptionButton, unitaryOptionButton])
+        button.style.display = 'none';
 }
 
 /**
  * Closes the pre-execution modal window.
- * 
+ * s
  * Destroys all plot containers, aborts all running
  * execution processes and returns modal to default
  * screening for the next invocation.
  */
 export function closeModal () {
     if (abortController) abortController.abort();
-    if (container.contains(canvasHeat)) container.removeChild(canvasHeat);
-    if (container.contains(canvasHist)) container.removeChild(canvasHist);
+    
+    deletePlots();
+    vanishPlotButtons();
 
     selectParamsNote.style.display = 'flex';
     loadingCircle.style.display = 'none';
     lcDesc.style.display = 'none';
     modal.style.display = 'none';
-    optionsMenu.style.display = 'none';
 }
 
 /**
- * Show the div containing the histogram plot
+ * Show the div containing the specified plot
  * and hide all other relevant divs.
+ * @param which The id of the desired plot.
  */
-export function toggleHistogram () {
-    canvasHeat.style.display = 'none';
-    canvasHist.style.display = 'flex';
-}
-
-/**
- * Show the div containing the heatmap plot
- * and hide all other relevant divs.
- */
-export function toggleHeatmap () {
-    canvasHist.style.display = 'none';
-    canvasHeat.style.display = 'flex';
+export function togglePlot (which) {
+    if (canvasCounts)
+        canvasCounts.style.display  = (which === 'counts')     ? 'flex': 'none';
+    if (canvasAmps)
+        canvasAmps.style.display    = (which === 'amplitudes') ? 'flex': 'none';
+    if (canvasUnitary)
+        canvasUnitary.style.display = (which === 'unitary')    ? 'flex': 'none';
 }
 
 /**
@@ -291,14 +318,20 @@ export function handleExecution () {
     abortController = new AbortController();
 
     // remove any previous plots
-    if (container.contains(canvasHeat)) container.removeChild(canvasHeat);
-    if (container.contains(canvasHist)) container.removeChild(canvasHist);
+    deletePlots();
+
+    // remove any previous buttons
+    vanishPlotButtons();
 
     // disable all modal interactables while execution runs
     disableModalWidgets(true);
     
     // fetch circuit architecture
     const template = circuit.makeTemplate();
+    // fetch checkbox selections
+    template.includeCounts = countsCheckbox.checked;
+    template.includeAmps = ampsCheckbox.checked;
+    template.includeUnitary = unitaryCheckbox.checked;
     // fetch shots and backend from input boxes in the modal GUI
     template.shots = parseInt(
         document.getElementById('shotsInputBox').value || 
@@ -324,65 +357,28 @@ export function handleExecution () {
         // remove loading screen and potentially leftover options
         loadingCircle.style.display = 'none';
         lcDesc.style.display = 'none';
-        optionsMenu.style.display = 'none';
+
+        // plot unitary matrix if requested
+        if (results.unitary) {
+            canvasUnitary = Functions.createUnitaryPlot(container, results);
+            unitaryOptionButton.style.display = 'flex';
+            togglePlot('unitary');
+        }
+        // plot amplitudes heatmap if requested
+        if (results.amplitudes) {
+            canvasAmps = Functions.createAmpsPlot(container, results);
+            ampsOptionButton.style.display = 'flex';
+            togglePlot('amplitudes');
+        }
+        // plot counts histogram if requested
+        if (results.counts) {
+            canvasCounts = Functions.createCountsPlot(container, results);
+            countsOptionButton.style.display = 'flex';
+            togglePlot('counts');
+        }
         
-        // initialize containers
-        canvasHist = Functions.createPlotCanvas('canvasHistogram', container.clientHeight, container.clientWidth);
-        canvasHeat = Functions.createPlotCanvas('canvasHeatmap', container.clientHeight, container.clientWidth);
-
-        // load graphs
-        container.appendChild(canvasHist);
-        container.appendChild(canvasHeat);
-
-        // plot histogram iff the results contain valid counts
-        // (could be None as not all backends support it and
-        // circuits without measurements produce none)
-        if (results.counts)
-            Plotly.newPlot('canvasHistogram', [{
-                x: Object.keys(results.counts),
-                y: Object.values(results.counts),
-                type: 'bar',
-                orientation: 'v',
-                marker: { color: 'lightgreen' }
-            }],{
-                title: 'Counts',
-                xaxis: {
-                    autotypenumbers: 'strict',
-                    tickangle: 60,
-            }});
-
-        // plot heatmap
-        const [y, x, z, text] = Functions.data2heatmap(results.amplitudes, results.probabilites);
-
-        Plotly.newPlot('canvasHeatmap', [{
-            y: y.map(item => item + '_'),
-            x: x.map(item => '_' + item),
-            z: z,
-            hoverinfo: 'text',
-            text: text,
-            type: 'heatmap',
-            colorscale: 'Greens',
-            reversescale: true,
-            zmin: 0,
-            zmax: 1
-        }], {
-            title: 'Amplitude matrix',
-            hoverlabel: { align: 'left' },
-            yaxis: { autotypenumbers: 'strict', },
-            xaxis: { autotypenumbers: 'strict',
-                     tickangle: 90,             },
-        });
-
-        // load histogram first if existing
-        if (results.counts) canvasHist.style.display = 'flex';
-        else canvasHeat.style.display = 'flex';
-
         // re-enable all buttons
         disableModalWidgets(false);
-
-        // reveal graph options menu if at least one plot other
-        // than the heatmap is also active
-        if (results.counts) optionsMenu.style.display = 'flex';
     })
     .catch(error => {
         closeModal();
@@ -484,6 +480,23 @@ export function handleRunButton () {
     disableModalWidgets(false);
     // summon modal window
     modal.style.display = 'flex';
+
+    // disable execution button if all options are unchecked
+    exeButton.disabled = !checkboxes.some(cb => cb.checked);
+    // also disable counts parameter boxes if countsCheckbox is disabled
+    backendList.disabled = !countsCheckbox.checked;
+    shotsBox.disabled = !countsCheckbox.checked;
+
+    // make the above behavior live on change
+    for (const checkbox of checkboxes)
+        checkbox.addEventListener('change', () => {
+            exeButton.disabled = !checkboxes.some(cb => cb.checked);
+
+            if (checkbox === countsCheckbox) {
+                backendList.disabled = !checkbox.checked;
+                shotsBox.disabled = !checkbox.checked;
+            }
+        });
 }
 
 /**

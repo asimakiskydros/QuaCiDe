@@ -171,46 +171,60 @@
                             Please wait for the execution to finish...
                         </label>
                     </div>
-                    <div class="modal-options-section" id="optionsMenu" style="display: none;">
-                        <button class="modal-option-button" id="showHistButton"  title="Show histogram">
-                            <img src="icons/hist-img.png" alt="Hi" draggable="false">
+                    <div class="modal-options-section" id="optionsMenu">
+                        <button class="modal-option-button" id="showCountsButton"  title="Show counts histogram" style="display: none;">
+                            <img src="icons/counts-plot-img.png" alt="C" draggable="false">
                         </button>
-                        <button class="modal-option-button" id="showHeatButton" title="Show heatmap">
-                            <img src="icons/heat-img.png" alt="He" draggable="false">
+                        <button class="modal-option-button" id="showAmpsButton" title="Show amplitudes heatmap" style="display: none;">
+                            <img src="icons/amps-plot-img.png" alt="A" draggable="false">
                         </button>
-                    </div>
-                </div>
-                <!-- command buttons -->
-                <div class="modal-buttons-container">
-                    <div class="modal-buttons-bottom-section">
-                        <button id="executeButton" class="modal-button" title="Run experiment with the specified parameters">
-                            Execute Simulation
-                        </button>
-                    </div>
-                    <div class="modal-buttons-top-section">
-                        <button id="closeModal" class="modal-button" title="Close modal. Pending executions will be aborted.">
-                            Close
+                        <button class="modal-option-button" id="showUnitaryButton" title="Show unitary matrix" style="display: none;">
+                            <img src="icons/unitary-plot-img.png" alt="U" draggable="false">
                         </button>
                     </div>
                 </div>
-                <!-- user input -->
-                <div class="modal-listboxes-container">
-                    <!-- listbox -->
-                    <div class="modal-buttons-top-section">
-                        <label for="backendList" class="modal-label">Backend Simulator</label>
-                        <div class="modal-listbox">
+                <!-- modal toolbox -->
+                <div class="modal-toolbox">
+                    <br>
+                    <label class="modal-label" style="margin-left: 10px;">Options</label>
+                    <hr style="width: 90%;"><br>
+                    <label class="modal-label">
+                        <input type="checkbox" class="modal-checkbox" id="countsCheckbox">
+                        Include counts
+                    </label>
+                    <div class="modal-counts-extra-option">
+                        <!-- listbox -->
+                        <label class="modal-label">
+                            Backend
                             <select id="backendList" name="backends" class="modal-listbox">
                                 <option value="qasm_simulator">Qasm</option>
                                 <option value="statevector_simulator">Statevector</option>
                                 <option value="aer_simulator">Aer</option>
-                                <!-- <option value="unitary_simulator">Unitary</option> -->
                             </select>
-                        </div>
+                        </label>
                     </div>
-                    <!-- shots inputbox -->
-                    <div class="modal-buttons-top-section">
-                        <label for="shotsInputLabel" class="modal-label">Shots</label>
-                        <input type="text" id="shotsInputBox" class="modal-textbox" placeholder="10000" pattern="\d+" title="Enter a positive integer">
+                    <div class="modal-counts-extra-option">
+                        <!-- shots inputbox -->
+                        <label class="modal-label">
+                            Shots
+                            <input type="text" id="shotsInputBox" class="modal-textbox" placeholder="10000" pattern="\d+" title="Enter a positive integer">                        
+                        </label>
+                    </div><br>
+                    <label class="modal-label">
+                        <input type="checkbox" class="modal-checkbox" id="ampsCheckbox">
+                        Include amplitudes
+                    </label><br><br>
+                    <label class="modal-label">
+                        <input type="checkbox" class="modal-checkbox" id="unitaryCheckbox">
+                        Include unitary matrix
+                    </label>
+                    <div class="modal-buttons-container">
+                        <button id="executeButton" class="modal-button" title="Run experiment with the specified parameters">
+                            Execute Simulation
+                        </button>
+                        <button id="closeModal" class="modal-button" title="Close modal. Pending executions will be aborted.">
+                            Close
+                        </button>
                     </div>
                 </div>
             </div>
