@@ -10,7 +10,6 @@ const identityGate = document.getElementById('identityGate');
 let undoStack = [], redoStack = [];
 
 // lookup tables
-const controllyGates  = ['controlGate', 'anticontrolGate'];
 const nongenericGates = ['identityGate', 'measurementGate'];
 const connectorTypes  = ['control-wire', 'swap-wire'];
 const poweredGates    = ['nthXGate', 'nthYGate', 'nthZGate'];
@@ -213,6 +212,7 @@ class Circuit {
         this.updateRegisterBorders();
         this.refreshStatCounters();
         this.checkForErrors();
+        this.refreshBorders();
     }
     /**
      * Empties the entire register, deleting all gates and all extra qubits.
@@ -309,6 +309,32 @@ class Circuit {
         }
     }
     /**
+     * Scans the register for columns that contain at least one post-selection measurement
+     * and spawns a border on its parent step.
+     * It refreshes old connections, meaning it deletes previous borders and starts from the
+     * beginning.
+     * @param {*} ignored (Optional) A gate that, if met, should not be taken into consideration.
+     */
+    refreshBorders (ignored) {
+        this.#updateColumns();
+        // discard previously drawn borders
+        for (const border of document.querySelectorAll('.border-wire'))
+            canvas.removeChild(border);
+
+        // spawn new borders spanning the steps that contain postselections
+        for (let col = 0; col < this._columns; col++) {
+            for (const qubit of this._qubits) 
+                if (   col < qubit.weight 
+                    && qubit.gates[col] !== ignored
+                    && qubit.gates[col].type === 'measurementGate' 
+                    && qubit.gates[col].display > 0
+                ) {
+                    this.drawBorderLine(col);
+                    break;
+                }   
+        }
+    }
+    /**
      * Tests the given column for swap connectivity. A column has swap connectivity if it contains at least one
      * pair of swap gates. Only the first pair encountered is taken into consideration.
      * @param {*} col The column to test.
@@ -345,7 +371,7 @@ class Circuit {
             if (col >= this._qubits[i].weight || this._qubits[i].gates[col] === ignored) continue;
 
             // test each qubit of the column for the above
-            const controlTest = controllyGates.includes(this._qubits[i].gates[col].type);
+            const controlTest = this._qubits[i].gates[col].type === 'controlGate';
             const genericTest = !nongenericGates.includes(this._qubits[i].gates[col].type);
             const bitState = this._qubits[i].isPositionBit(col);
 
@@ -387,6 +413,41 @@ class Circuit {
             controlWire.style.border = '1px solid black';
 
         canvas.appendChild(controlWire);
+    }
+    /**
+     * Draws a vertical border line through the entirety of step indexed 'col'.
+     * @param {*} col The column/step to place the border on.
+     */
+    drawBorderLine (col) {
+        // create the border
+        const border = document.createElement('div');
+        border.id = 'border-wire' + col;
+        border.className = 'border-wire';
+        border.style.left = (col + 5.79) * Constants.GATE_DELIMITER + 'px';
+        border.style.top = Constants.TOP_BOUNDARY - 20 + 'px';
+        border.style.height = this._qubits.length * 50 + 30 + 'px';
+
+        // find the postselected ket state
+        let state = '';
+        for (const qubit of this._qubits)
+            if (col < qubit.weight && qubit.gates[col].type === 'measurementGate')
+                switch (qubit.gates[col].display) {
+                    case 0:
+                        state += '_';
+                        break;
+                    case 1:
+                        state += '0';
+                        break;
+                    case 2:
+                        state += '1';
+                        break;
+                }
+            else state += '_';
+        
+        // add the reversed state as hint-text on highlight
+        border.title = `Postselection after this step: |${[...state].reverse().join('')}〉`;
+
+        canvas.appendChild(border);
     }
     /**
      * Draws correct register rectangles around the kets of the existing qubits
@@ -453,7 +514,7 @@ class Circuit {
             this._qubits[i].state.textContent = template[i].state;
             this._qubits[i].registerColor = template[i].color;
             
-            for (const gate of template[i].gates.reverse()){
+            for (const gate of template[i].gates.reverse()) {
                 // for each qubit wire, attach each copy gate back-to-front.
                 // this is necessary because the copies spawn on the left side of the screen
                 // and thus attachGate knows to shift right to prepend the gate to the left.
@@ -465,6 +526,25 @@ class Circuit {
                 if (copy.powerBox && parts.length > 1) {
                     copy.powerBox.value = parts[1];
                     copy.powerBox.style.pointerEvents = 'auto';
+                }
+                // change to the correct display image for measurements and controls
+                else if (copy.type === 'measurementGate') {
+                    const imageDisplay = copy.body.querySelector('img');
+                    const [host, img] = imageDisplay.src.split(`/${Gate.iconsDir}/`);
+
+                    // apply new image
+                    imageDisplay.src = `${host}/${Gate.iconsDir}/${Gate.measurementTextures[parts[1]]}`;
+                    imageDisplay.alt = Gate.measurementLabels[parts[1]];
+                    copy.display = parseInt(parts[1]);
+                }
+                else if (copy.type === 'controlGate') {
+                    const imageDisplay = copy.body.querySelector('img');
+                    const [host, img] = imageDisplay.src.split(`/${Gate.iconsDir}/`);
+
+                    // apply new image
+                    imageDisplay.src = `${host}/${Gate.iconsDir}/${Gate.controlTextures[parts[1]]}`;
+                    imageDisplay.alt = Gate.controlLabels[parts[1]];
+                    copy.display = parseInt(parts[1]);
                 }
             }
         }
@@ -546,15 +626,16 @@ class Circuit {
         for (let i = 0; i < this._columns; i++) {
             const swaps = [];
             for (const qubit of this._qubits) if (i < qubit.weight) {
-                const bitState = qubit.isPositionBit(i);
+                const gateType = qubit.gates[i].type;
                 // count the swaps present on given column/step
-                if (qubit.gates[i].type === 'swapGate')
-                    swaps.push([qubit.gates[i], bitState]);
-                // if the examined gate is a hadamard ontop of a bit then immediately turn it red.
-                else if (qubit.gates[i].type === 'hGate' && bitState)
-                    qubit.gates[i].makeErrored();
+                if (gateType === 'swapGate')
+                    swaps.push(qubit.gates[i]);
+                // if the examined gate sits ontop of a bit and its not a control
+                // then its an error.
+                if (qubit.isPositionBit(i) && gateType !== 'controlGate')
+                    qubit.gates[i].makeErrored('This gate cannot exist ontop of a bit.');
                 // if the examined gate is a power, handle it differently
-                else if (poweredGates.includes(qubit.gates[i].type))
+                if (poweredGates.includes(gateType))
                     handleExponential(
                         qubit.gates[i],
                         qubit.gates[i].powerBox.value,
@@ -562,21 +643,11 @@ class Circuit {
                     );
             }
             // only exactly 2 swaps can be present at each column, or none at all
-            if (swaps.length === 2) {
-                // make each other's pair
-                swaps[0][0].pair = `${swaps[1][0].owner}<!@DELIMITER>${i}<!@DELIMITER>${swaps[1][1]}`;
-                swaps[1][0].pair = `${swaps[0][0].owner}<!@DELIMITER>${i}<!@DELIMITER>${swaps[0][1]}`;
-            }
-            else for (const gate of swaps) {
-                gate[0].pair = '';
-                gate[0].makeErrored();
-            }
+            if (swaps.length !== 2) for (const gate of swaps) 
+                gate.makeErrored(swaps.length > 2 ? 'Too many SWAPs on this step.': 'SWAPs need a pair on their step.');
         }
         // live-enable/disable runButton based on context
         toggleRunButton();
-    }
-    static getControllyGates () {
-        return controllyGates;
     }
     static getNongenericGates () {
         return nongenericGates;

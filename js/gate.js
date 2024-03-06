@@ -1,9 +1,16 @@
 import * as Behaviors from './behaviors.js';
+import { circuit } from './main.js';
 
 let createdGatesCounter = 0;
 let placedMeasurementGates = 0;
 let identitiesCounter = 0;
 let erroredGates = 0;
+
+const iconsDir            = 'icons';
+const measurementTextures = ['measurement.png', 'post-select-0.png', 'post-select-1.png'];
+const measurementLabels   = ['M', 'PS-0', 'PS-1'];
+const controlTextures     = ['control.png', 'anticontrol.png'];
+const controlLabels       = ['C', 'AC'];
 
 class Gate {
     /**
@@ -26,12 +33,11 @@ class Gate {
         this._offsetY = rect.height / 2;
 
         // save relevant information on flags for later use
-        this._hasDragNdrop = false;
         this._owner = 'none';
         this._type = other.id;
         this._errored = false;
-        this._pair = '';
         this._powerBox = this._body.querySelector('.textbox');
+        this._display = 0;
 
         // if this is an identity gate, dont project it at all
         if (this._type === 'identityGate') { 
@@ -50,20 +56,30 @@ class Gate {
 
         // feed dragNdrop behavior to new gates
         this._body.addEventListener('mousedown', (e) => { 
-            if (e.ctrlKey || e.shiftKey || e.button !== 0) return;
+            if (e.altKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
             Behaviors.handleDragNdrop(this); 
         });
+
         // feed fast delete
         this._body.addEventListener('contextmenu', (e) => { Behaviors.fastDeleteGate(e, this); });
-        // feed fast copy
-        this._body.addEventListener('click', (e) => { Behaviors.fastCopyGate(e, this); });
+
+        this._body.addEventListener('click', (e) => { 
+            if (e.shiftKey || e.ctrlKey)
+                // feed fast copy
+                Behaviors.fastCopyGate(e, this); 
+            if (e.altKey && this._type === 'measurementGate' && !this._errored) {
+                // enforce postselection on measurement
+                this._display = Behaviors.changeGateDisplay(e, this, measurementTextures, measurementLabels, iconsDir);
+                Behaviors.handlePostSelectionBorder(this);
+            }
+            else if (e.altKey && this._type === 'controlGate')
+                // toggle 0-1 state on control
+                this._display = Behaviors.changeGateDisplay(e, this, controlTextures, controlLabels, iconsDir);
+        });
     }
     // getters
     get body () {
         return this._body;
-    }
-    get hasDragNdrop () {
-        return this._hasDragNdrop;
     }
     get owner () {
         return this._owner;
@@ -74,17 +90,19 @@ class Gate {
     get errored () {
         return this._errored;
     }
-    get pair () {
-        return this._pair;
-    }
     get stamp () {
         let stamp = this._type;
         if (this._powerBox && this._powerBox.value) 
-            stamp += '<!@DELIMITER>' + this._powerBox.value; 
+            stamp += '<!@DELIMITER>' + this._powerBox.value;
+        else if (this._type === 'measurementGate' || this._type === 'controlGate')
+            stamp += '<!@DELIMITER>' + this._display;
         return stamp;
     }
     get powerBox () {
         return this._powerBox;
+    }
+    get display () {
+        return this._display;
     }
     static get placedMeasurementGates () {
         return placedMeasurementGates;
@@ -98,18 +116,30 @@ class Gate {
     static get erroredGates () {
         return erroredGates;
     }
-    // setters
-    set hasDragNdrop (status) {
-        this._hasDragNdrop = status;
+    static get measurementTextures () {
+        return measurementTextures;
     }
+    static get measurementLabels () {
+        return measurementLabels;
+    }
+    static get controlTextures () {
+        return controlTextures;
+    }
+    static get controlLabels () {
+        return controlLabels;
+    }
+    static get iconsDir () {
+        return iconsDir;
+    }
+    // setters
     set owner (qubitID) {
         this._owner = qubitID;
     }
     set errored (isErrored) {
         this._errored = isErrored;
     }
-    set pair (pairTemplate) {
-        this._pair = pairTemplate;
+    set display (mode) { 
+        this._display = mode;
     }
     /**
      * Move this div to 'amount' pixels from the left of the screen.
@@ -150,7 +180,7 @@ class Gate {
      * Useful for gates with unique png-like textures, like Pauli X.
      */
     banishBorder () {
-        if(['xGate', 'swapGate', 'controlGate', 'anticontrolGate'].includes(this._type)) {
+        if(['xGate', 'swapGate', 'controlGate'].includes(this._type)) {
             this._body.style.backgroundColor = 'transparent';
             this._body.style.border = 'none';
             return true;
@@ -168,10 +198,13 @@ class Gate {
     /**
      * Tag this gate as errored and change its border to red.
      * If this gate is already errored nothing happens.
+     * Ignore identities.
+     * @param title (Optional) Description of error that appears on hover.
      */
-    makeErrored () {
-        if (this._errored) return;
+    makeErrored (title) {
+        if (this._errored || this._type === 'identityGate') return;
 
+        if (title) this._body.title = title;
         this._errored = true;
         this._body.style.backgroundColor = 'white';
         this._body.style.border = '1px solid red';
@@ -185,6 +218,7 @@ class Gate {
         if (!this._errored) return;
 
         this._errored = false;
+        this._body.title = '';
         // re-instate the correct border-background combo
         if (!this.banishBorder()) this.summonBorder();
         erroredGates--;

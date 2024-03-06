@@ -64,6 +64,7 @@
     height: 100%;
     width: 25%;
     display: inline-block;
+    border-radius: 5px;
     margin-left: 5px;
     cursor: default;
 }
@@ -163,7 +164,6 @@
 .register-border {
     position: absolute;
     border: none;
-    /*left: 11.85%;*/
     pointer-events: none;
 }
 
@@ -192,4 +192,15 @@
     width: 1px;
     background-color: black;
     border: 1px solid white;
+}
+
+/* Border for postselections.
+   Desc: gray, dashed, spans the entire
+   length of the step.
+*/
+.border-wire {
+    position: absolute;
+    width: 1px;
+    border-left: 2px dashed gray;
+    cursor: pointer;
 }

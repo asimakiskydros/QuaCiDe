@@ -1,6 +1,12 @@
 import * as Constants from './constants.js';
 import { Gate } from './gate.js';
 
+const tealgrnColorscale = [
+    [   0,   'rgb(0, 128, 128)'],
+    [ 0.5, 'rgb(102, 204, 204)'],
+    [   1,         'lightgreen']
+]
+
 /**
      * Find the qubit currently hovered (if any) and indexize the left-coordinate of the mouse
      * with respect to that qubit.
@@ -198,7 +204,7 @@ export function createAmpsPlot(container, results) {
         hoverinfo: 'text',
         text: text,
         type: 'heatmap',
-        colorscale: 'Greens',
+        colorscale: tealgrnColorscale,
         reversescale: true,
         xgap: 5,
         ygap: 5,
@@ -236,7 +242,7 @@ export function createUnitaryPlot(container, results) {
         hoverinfo: 'text',
         text: results.unitary,
         type: 'heatmap',
-        colorscale: 'Greens',
+        colorscale: tealgrnColorscale,
         showscale: false,
         reversescale: true,
         xgap: 5,
@@ -249,7 +255,7 @@ export function createUnitaryPlot(container, results) {
         margin: { l: 50, r: 30, b: 50, t: 65, pad: 10 },
     }, {
         modeBarButtonsToAdd: [{
-            name: 'downloadMatrix',
+            name: 'Download matrix as .txt',
             icon: Plotly.Icons.disk,
             click: () => {
                 const blob = new Blob(

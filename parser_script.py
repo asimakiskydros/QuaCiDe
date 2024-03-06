@@ -1,10 +1,12 @@
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import Aer
+from qiskit.extensions import Initialize
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from sympy import sympify
 from numpy.core.defchararray import startswith
 from lookup.tables import *
+from collections import defaultdict
 import numpy as np
 
 app = Flask(__name__)
@@ -15,19 +17,24 @@ CORS(app)
 @cross_origin()
 def run_simulation():
     counts, amplitudes, probabilites, unitary, unitary_squares = None, None, None, None, None    
-    template = request.get_json()
+    template: dict = request.get_json()
 
-    gate_matrix_measured = get_gate_matrix(template)
-    gate_matrix_unmeasured = get_gate_matrix(template, ignore = 'measurementGate')
-    initial_state = get_initial_state(template)
+    qc, ps = build_circuit(template.get('length'), get_gate_matrix(template))
 
-    if template.get('includeCounts'):
-        counts = calculate_counts(template, gate_matrix_measured, initial_state)
-    if template.get('includeAmps'):
-        amplitudes, probabilites = calculate_amplitudes(template, gate_matrix_unmeasured, initial_state)
     if template.get('includeUnitary'):
-        unitary, unitary_squares = calculate_unitary(template, gate_matrix_unmeasured)
-    
+        # reverse the bits to temporarily combat little-endianness
+        unitary, unitary_squares = calculate_unitary(qc.reverse_bits())
+
+    # initialize after potentially computing the unitary
+    qc.compose(Initialize(get_initial_state(template)), front = True, inplace = True)
+
+    if template.get('includeAmps'):
+        # remove any measurements temporarily to calculate true amplitudes
+        # post selection still applies
+        amplitudes, probabilites = calculate_amplitudes(qc.remove_final_measurements(inplace = False), ps)
+    if template.get('includeCounts'):
+        counts = calculate_counts(qc, template.get('backend'), int(template.get('shots')), ps)
+
     return jsonify({
         'counts': counts,
         'amplitudes': amplitudes,
@@ -77,17 +84,16 @@ def get_gate_matrix(template: dict, dummy: str = 'identityGate', ignore: str = N
 def segregate(column: list[str]):
     """ Splits the indeces of the column based on gate type.
     """
-    controls, powers, rest = [], [], []
+    powers, rest = [], []
 
-    for gate_type in control_states:
-        controls += np.where(column == gate_type)[0].tolist()
     for gate_type in regular_gates:
         rest += np.where(column == gate_type)[0].tolist()
     for gate_type in powered_gates:
         powers += np.where(startswith(column.astype(str), gate_type))[0].tolist()
 
     swaps = np.where(column == 'swapGate')[0].tolist()
-    measurements = np.where(column == 'measurementGate')[0].tolist()
+    controls = np.where(startswith(column.astype(str), 'controlGate'))[0].tolist()
+    measurements = np.where(startswith(column.astype(str), 'measurementGate'))[0].tolist()
     
     return controls, swaps, measurements, powers, rest
 
@@ -121,6 +127,8 @@ def build_circuit(n_qubits: int, gate_matrix: np.ndarray, initial_state: str = N
     if initial_state is not None:
         qc.initialize(initial_state)
 
+    post_selections = {}
+
     for col in gate_matrix.T:
         # merge the entire column into a single gate
         controls, swaps, measurements, powers, rest = segregate(col)
@@ -128,19 +136,28 @@ def build_circuit(n_qubits: int, gate_matrix: np.ndarray, initial_state: str = N
 
         # add controls for the entire column
         for pos in controls:
-            custom_gate = custom_gate.control(ctrl_state = control_states[col[pos]])
+            _, mode = col[pos].split('<!@DELIMITER>')
+            custom_gate = custom_gate.control(ctrl_state = control_states[int(mode)])
 
         # add controlled gate to circuit at correct indeces
         qc.append(custom_gate, controls + rest + powers + swaps)
 
         # add measurements
         for pos in measurements:
+            # save post-selections for later
+            _, mode = col[pos].split('<!@DELIMITER>')  
+            mode = int(mode)
+            if mode > 0:             
+                # mode 1 --> ps 0 --> keep |0>
+                # mode 2 --> ps 1 --> keep |1>
+                post_selections[pos] = '0' if mode == 1 else '1'
+            # measure normally
             qc.measure(pos, pos)
 
         # column done, move to the next
         qc.barrier()
 
-    return qc
+    return qc, post_selections
 
 
 def execute(circuit: QuantumCircuit, backend, shots: int = None):
@@ -151,45 +168,77 @@ def execute(circuit: QuantumCircuit, backend, shots: int = None):
     return backend.run(tqc, shots = shots)
 
 
-def calculate_counts(template: dict, gate_matrix: np.ndarray, initial_state: str) -> dict:
+def post_select_counts(complete_counts: dict[str, int], i_qubit: int, postselect_state: str) -> dict[str, int]:
+    """ Enforces the specified postselection on the given counts.
+        Discards all states in the counts dictionary that dont have
+        the given postselect_state on qubit i_qubit.
+    """
+    ps_counts = {}
+    for state, counts in complete_counts.items():
+        # if the given postselection matches the current state-count pair,
+        # include it into the new dictionary as is. Otherwise, include 0.
+        ps_counts[state] = counts * int(state[::-1][i_qubit] == postselect_state)
+    return ps_counts
+
+
+def post_select_statevector(statevector: np.ndarray, i_qubit: int, postselect_state: str) -> np.ndarray:
+    """ Enforces the specified postselection on the given statevector.
+        Sends all amplitudes in the sv whose state doesnt have the given
+        postselect_state on qubit i_qubit to 0, then normalizes the new sv.
+    """
+    sv_shape = statevector.shape[0]
+    new_sv = np.zeros(sv_shape, dtype = complex)
+    for state, amplitude in enumerate(statevector):
+        # turn to binary string, remove the '0b' prefix, fill with 
+        # leading 0 to bring to size 'n_qubits' and then reverse it
+        # to little endian
+        state2bin = bin(state)[2:].zfill(int(np.sqrt(sv_shape)))[::-1]
+        # if the given postselection matches the current state-amp pair,
+        # include it into the new list as is. Otherwise, include 0.
+        new_sv[state] = amplitude if state2bin[i_qubit] == postselect_state else 0.+0.j
+    # re-normalize the statevector to obey sum == 1
+    return np.round(new_sv / np.linalg.norm(new_sv), 4)
+
+
+def calculate_counts(circuit: QuantumCircuit, backend: str, shots: int, post_selections: dict[int, str]) -> dict:
     """ Runs the given circuit on the specified backend, 'shots' times.
         Returns the dictionary of resulting counts.
     """
-    circuit = build_circuit(
-        template.get('length'),
-        gate_matrix,
-        initial_state
-    )
     try:
         job = execute(
             circuit,
-            Aer.get_backend(template.get('backend')),
-            shots = template.get('shots')
+            Aer.get_backend(backend),
+            shots
         )
-        return job.result().get_counts()        
+        counts = job.result().get_counts()        
+
+        # apply post-selection
+        for q_index, q_ps in post_selections.items():
+            counts = post_select_counts(counts, q_index, q_ps)
+
+        return counts
     except Exception as e:
         print(f'Exception raised at calculate_counts:\n {e}')
-        # if the given circuit contains no measurement gates
-        # or the given backend is faulty, there will be no counts
         return None
 
 
-def calculate_amplitudes(template: dict, gate_matrix: np.ndarray, initial_state: str):
+def calculate_amplitudes(circuit: QuantumCircuit, post_selections: dict[int, str]):
     """ Runs the given circuit on Statevector sim to extrapolate
         theoretical amplitudes and probabilites.
     """
-    circuit = build_circuit(
-        template.get('length'),
-        gate_matrix,
-        initial_state
-    )
     try:
         job = execute(
             circuit,
             Aer.get_backend('statevector_simulator'),
         )
         amplitudes = job.result().get_statevector(circuit, 4).data
+
+        # apply post-selection
+        for q_index, q_ps in post_selections.items():
+            amplitudes = post_select_statevector(amplitudes, q_index, q_ps)
+
         probabilities = np.round(np.abs(amplitudes) ** 2, 4).tolist()
+
         # remove unnecessary parentheses
         amplitudes = [el.replace('(', '').replace(')', '') for el in amplitudes.astype(str).tolist()]
 
@@ -199,23 +248,21 @@ def calculate_amplitudes(template: dict, gate_matrix: np.ndarray, initial_state:
         return None, None
 
 
-def calculate_unitary(template: dict, gate_matrix: np.ndarray):
+def calculate_unitary(circuit: QuantumCircuit):
     """ Runs the given circuit on Unitary sim without initializing
         to extrapolate its entire unitary matrix.
     """
-    circuit = build_circuit(
-        template.get('length'),
-        gate_matrix
-    )
     try:
         job = execute(
             circuit, 
             Aer.get_backend('unitary_simulator')
         )
-        unitary = job.result().get_unitary().data
+        unitary = job.result().get_unitary(circuit, 4).data
+
         squares = np.round(np.abs(unitary) ** 2, 4).tolist()
+
         # remove unnecessary parentheses
-        unitary = np.round(unitary, 4).astype(str).tolist()
+        unitary = unitary.astype(str).tolist()
         for row in unitary:
             for i, el in enumerate(row):
                 row[i] = el.replace('(', '').replace(')', '')

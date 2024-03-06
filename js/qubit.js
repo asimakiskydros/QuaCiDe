@@ -174,7 +174,7 @@ class Qubit {
 
         // inform lookup of new qubit-bit positions
         this._bitPositions = ''
-        for (let i = 0; i < this.weight; i++) this._bitPositions += i < pos ? 'q' : 'b';
+        for (let i = 0; i < this.weight; i++) this._bitPositions += i <= pos ? 'q' : 'b';
     }
     /**
      * Informs whether the qubit has collapsed at given position.

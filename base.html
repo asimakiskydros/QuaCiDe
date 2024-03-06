@@ -44,18 +44,14 @@
                         <div class="gate" id="controlGate">
                             <img src="icons/control.png" alt="C" draggable="false">
                         </div> 
-                        <!-- ANTICONTROL symbol -->
-                        <div class="gate" id="anticontrolGate">
-                            <img src="icons/anticontrol.png" alt="AC" draggable="false">
-                        </div> 
                         <!-- SWAP -->
                         <div class="gate" id="swapGate">
                             <img src="icons/swap.png" alt="SW" draggable="false">
                         </div> 
                     </div>
                     <!-- Half-Turns -->
-                    <div class="gate-section-title">Half-Turns</div>
-                    <div class="gate-section-container" id="halfturnsList">
+                    <div class="gate-section-title">Turns</div>
+                    <div class="gate-section-container" id="turnsList">
                         <!-- PAULI X-->
                         <div class="gate" id="xGate">
                             <img src="icons/pauliX.png" alt="X" draggable="false">
@@ -72,13 +68,21 @@
                         <div class="gate" id="hGate">
                             <span>H</span>
                         </div> 
+                        <!-- QUARTER TURN -->
+                        <div class="gate" id="sGate">
+                            <span>S</span>
+                        </div> 
+                        <!-- EIGHTH TURN -->
+                        <div class="gate" id="tGate">
+                            <span>T</span>
+                        </div> 
                         <!-- IDENTITY -->
                         <div class="gate" id="identityGate" style="display: none;">
                             <span>I</span>
                         </div> 
                     </div>
-                    <div class="gate-section-title">Phase Shifts</div>
-                    <div class="gate-section-container" id="phaseshiftsList">
+                    <div class="gate-section-title">Parameterized</div>
+                    <div class="gate-section-container" id="parameterizedList">
                         <!-- Nth POWER OF X -->
                         <div class="gate" id="nthXGate">  
                             <span style="font-size: 20px;">
@@ -100,14 +104,6 @@
                             </span>
                             <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
                         </div>
-                        <!-- QUARTER TURN -->
-                        <div class="gate" id="sGate">
-                            <span>S</span>
-                        </div> 
-                        <!-- EIGHTH TURN -->
-                        <div class="gate" id="tGate">
-                            <span>T</span>
-                        </div> 
                     </div>
                 </div>
                 <!-- Execution Button Corner -->
@@ -166,10 +162,17 @@
                         <label id="selectParamsDesc" class="help-note">
                             Select desired parameters and start execution.
                         </label>
-                        <div id="loadingCircleWidget" class="loading-circle"></div>
-                        <label id="loadingCircleDesc" class="loading-circle-description">
-                            Please wait for the execution to finish...
+                        <label id="noOutputMsg" class="help-note" style="display: none;">
+                            No outputs (sorry).<br>
+                            If this is unexpected, check your circuit again,<br>
+                            otherwise there might have been a problem with the server.
                         </label>
+                        <div id="loadingTexture" style="text-align: center; display: none;">
+                            <label class="loading-circle-description" for="loadingCircleWidget">
+                                Please wait for the execution to finish...
+                            </label>
+                            <div class="loading-circle"></div>
+                        </div>            
                     </div>
                     <div class="modal-options-section" id="optionsMenu">
                         <button class="modal-option-button" id="showCountsButton"  title="Show counts histogram" style="display: none;">
@@ -187,11 +190,11 @@
                 <div class="modal-toolbox">
                     <br>
                     <label class="modal-label" style="margin-left: 10px;">Options</label>
-                    <hr style="width: 90%;"><br>
+                    <hr style="width: 90%; margin-bottom: 15px;">
                     <label class="modal-label">
                         <input type="checkbox" class="modal-checkbox" id="countsCheckbox">
                         Include counts
-                    </label>
+                    </label><br>
                     <div class="modal-counts-extra-option">
                         <!-- listbox -->
                         <label class="modal-label">
@@ -231,33 +234,29 @@
         </div>
         <!-- Context menus for the gates on the toolbox -->
         <div class="gate-context" id="measurementGateContext">
-            <b style="color: rgb(77, 187, 77);">Measurement Gate</b>
+            <b style="color: rgb(77, 187, 77);">Measurement</b>
             <br>
             <br>Collapses the qubit state
             <br>into one of the basis vectors,
             <br>each with its respecting
-            <br>probability. 
+            <br>probability. ALT + Click
+            <br>to enforce postselection.
         </div>
         <div class="gate-context" id="controlGateContext">
-            <b style="color: rgb(77, 187, 77);">Control Gate</b>
+            <b style="color: rgb(77, 187, 77);">Control</b>
             <br>
             <br>Thwarts the activation
-            <br>of the step, unless parent
-            <br>qubit is on state 1.
-        </div>
-        <div class="gate-context" id="anticontrolGateContext">
-            <b style="color: rgb(77, 187, 77);">Anti-control Gate</b>
-            <br>
-            <br>Thwarts the activation
-            <br>of the step, unless parent
-            <br>qubit is on state 0.
+            <br>of the step, unless satisfied.
+            <br>By default, satisfies on state 1.
+            <br>ALT + Click to satisfy
+            <br>on state 0.
         </div>
         <div class="gate-context" id="swapGateContext">
             <b style="color: rgb(77, 187, 77);">Swap Gate</b>
             <br>
             <br>Swaps two qubits.
             <br>Each step can have none
-            <br>or strictly 2 swaps.
+            <br>or exactly 2 swaps.
         </div>
         <div class="gate-context" id="xGateContext">
             <b style="color: rgb(77, 187, 77);">Pauli X Gate</b>

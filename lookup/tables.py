@@ -6,10 +6,7 @@ ket2str = {
     '|+j〉': 'r', '|-j〉': 'l'
 }
 
-control_states = {
-    'controlGate': '1',
-    'anticontrolGate': '0'
-}
+control_states = [1, 0]
 
 regular_gates = {
     'xGate': XGate,

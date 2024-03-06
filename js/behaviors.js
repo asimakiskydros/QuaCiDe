@@ -7,8 +7,8 @@ import { Qubit }      from './qubit.js';
 
 // modal buttons
 const selectParamsNote    = document.getElementById('selectParamsDesc');
-const loadingCircle       = document.getElementById('loadingCircleWidget');
-const lcDesc              = document.getElementById('loadingCircleDesc');
+const loadingTexture      = document.getElementById('loadingTexture');
+const noOutputsNote       = document.getElementById('noOutputMsg');
 const countsCheckbox      = document.getElementById('countsCheckbox');
 const ampsCheckbox        = document.getElementById('ampsCheckbox');
 const unitaryCheckbox     = document.getElementById('unitaryCheckbox');
@@ -19,6 +19,9 @@ const exeButton           = document.getElementById('executeButton');
 const backendList         = document.getElementById('backendList');
 const shotsBox            = document.getElementById('shotsInputBox');
 const checkboxes          = [countsCheckbox, ampsCheckbox, unitaryCheckbox];
+
+// set server ip
+export const serverIP = 'http://127.0.0.1:5000';
 
 // fetch execution window modal
 export const modal = document.getElementById('setupModal');
@@ -36,6 +39,8 @@ export function handleDragNdrop (gate) {
     let dragging = true;
     // summon extra qubit
     circuit.appendQubit();
+    // refresh borders to account for the new qubit
+    circuit.refreshBorders(gate);
 
     /**
      * Subroutine 1: Dragging. Activated while holding MSB1 (left).
@@ -61,7 +66,7 @@ export function handleDragNdrop (gate) {
         circuit.connectControls(gate);
         // delete unused swap connections
         circuit.connectSwaps(gate);
-        
+
         // indexize and fetch the qubit wire hovered by the cursor
         let [relativePosition, qubit] = Functions.localize(e, gate, circuit);
 
@@ -99,13 +104,13 @@ export function handleDragNdrop (gate) {
 
             // control connectivity test
             let [start, end, hasQuantumControl, hasClassicalControl, hasGeneric] = circuit.testForControlConnectivity(relativePosition, gate);
-            const isControlly = Circuit.getControllyGates().includes(gate.type);
+            const isControl = gate.type === 'controlGate';
             const isNongeneric = Circuit.getNongenericGates().includes(gate.type);
-            if (((hasQuantumControl || hasClassicalControl) && !isControlly && !isNongeneric) || (hasGeneric && isControlly)) {
+            if (((hasQuantumControl || hasClassicalControl) && !isControl && !isNongeneric) || (hasGeneric && isControl)) {
                 if (end === -1) end = start;
                 if (start > row) start = row;
                 if (end < row) end = row;
-                if (!isControlly)
+                if (!isControl)
                     circuit.drawConnectorLine(
                         relativePosition, start, end, 'control-wire', 
                         (hasQuantumControl ? 1 : 0) + (hasClassicalControl ? 2 : 0)
@@ -153,7 +158,7 @@ export function handleDragNdrop (gate) {
         if (gate.powerBox) gate.powerBox.style.pointerEvents = 'auto';
 
         // remove the border of a placed gate
-        if(['xGate', 'swapGate', 'controlGate', 'anticontrolGate'].includes(gate.type))
+        if(['xGate', 'swapGate', 'controlGate'].includes(gate.type))
             gate.banishBorder();
 
         // if this gate already existed in some other qubit, remove it from there
@@ -281,8 +286,8 @@ export function closeModal () {
     vanishPlotButtons();
 
     selectParamsNote.style.display = 'flex';
-    loadingCircle.style.display = 'none';
-    lcDesc.style.display = 'none';
+    noOutputsNote.style.display = 'none';
+    loadingTexture.style.display = 'none';
     modal.style.display = 'none';
 }
 
@@ -309,10 +314,10 @@ export function togglePlot (which) {
  * plots, removes UI from standby and projects the histogram first.
  */
 export function handleExecution () {
-    // hide note and show loading screen
+    // hide notes and show loading screen
     selectParamsNote.style.display = 'none';
-    loadingCircle.style.display = 'flex';
-    lcDesc.style.display = 'flex';
+    noOutputsNote.style.display = 'none';
+    loadingTexture.style.display = 'grid';
 
     // load fresh web abort controller
     abortController = new AbortController();
@@ -340,7 +345,7 @@ export function handleExecution () {
     template.backend = document.getElementById('backendList').value;
 
     // send the circuit to qiskit and wait for the output
-    fetch('http://127.0.0.1:5000/parser', {
+    fetch(`${serverIP}/parser`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -355,8 +360,7 @@ export function handleExecution () {
     })
     .then(results => {
         // remove loading screen and potentially leftover options
-        loadingCircle.style.display = 'none';
-        lcDesc.style.display = 'none';
+        loadingTexture.style.display = 'none';
 
         // plot unitary matrix if requested
         if (results.unitary) {
@@ -377,6 +381,10 @@ export function handleExecution () {
             togglePlot('counts');
         }
         
+        if (!results.counts && !results.amplitudes && !results.unitary)
+            // reveal the no outputs label in case no plots appear
+            noOutputsNote.style.display = 'flex';
+
         // re-enable all buttons
         disableModalWidgets(false);
     })
@@ -396,7 +404,7 @@ export function handleExecution () {
  */
 export function fastDeleteGate (event, gate) {
     // activate only on left click
-    if (event.shiftKey || event.ctrlKey || event.button !== 2) return;
+    if (event.altKey || event.shiftKey || event.ctrlKey || event.button !== 2) return;
 
     // hide default context menu box
     event.preventDefault();
@@ -483,7 +491,7 @@ export function handleRunButton () {
 
     // disable execution button if all options are unchecked
     exeButton.disabled = !checkboxes.some(cb => cb.checked);
-    // also disable counts parameter boxes if countsCheckbox is disabled
+    // disable backend list and shots box if counts is unchecked
     backendList.disabled = !countsCheckbox.checked;
     shotsBox.disabled = !countsCheckbox.checked;
 
@@ -494,7 +502,7 @@ export function handleRunButton () {
 
             if (checkbox === countsCheckbox) {
                 backendList.disabled = !checkbox.checked;
-                shotsBox.disabled = !checkbox.checked;
+                shotsBox.disabled = !checkbox.checked; 
             }
         });
 }
@@ -515,17 +523,61 @@ export function handleExponential (gate, value, parent, pos) {
     pos = pos > -1 ? pos : parent.argfindGate(gate);
 
     // empty values and powers on bits get eliminated
-    if (value === '' ||
-        (pos !== null && gate.type !== 'nthZGate' && parent.isPositionBit(pos))
-    )
-        gate.makeErrored();
+    
+    if (pos !== null && parent.isPositionBit(pos))
+        gate.makeErrored('This gate cannot exist ontop of a bit.');
     else try {
-        math.evaluate(value);
+        // if the given text is not computable, this will throw
+        const result = math.evaluate(value);
+        // some text inputs also work with evaluate... dont understand why,
+        // but throw anyway
+        if (value === '' || typeof result !== 'number') throw Error();
     }
     catch (error) {
         // unevaluatable values get eliminated
-        gate.makeErrored();
+        gate.makeErrored('Invalid exponent.');
     }
     // handle run button based on context
     Functions.toggleRunButton();
+}
+
+/**
+ * Shuffle gate displays on alt-click.
+ * Works for measurement and control gates only.
+ * @param {*} event The event that proc-ed this behavior.
+ * @param {*} gate The gate clicked.
+ * @param {*} textures The carousel of image displays.
+ * @param {*} labels The carousel of alt label displays.
+ * @param {*} iconsDir The folder name of all the image textures.
+ * @returns The index of the next texture used.
+ */
+export function changeGateDisplay (event, gate, textures, labels, iconsDir) {
+    // fire only on alt + click
+    if (!event.altKey || event.button !== 0 || event.shiftKey || event.ctrlKey) return;
+
+    // save current state
+    circuit.saveSnapshot(); 
+
+    // fetch current image and calculate the next one on the carousel
+    const display = gate.body.querySelector('img');
+    const [host, img] = display.src.split(`/${iconsDir}/`);
+    const nextState = (textures.indexOf(img) + 1) % textures.length;
+
+    // apply new image and alt desc
+    display.src = `${host}/${iconsDir}/${textures[nextState]}`;
+    display.alt = labels[nextState];
+
+    return nextState;
+}
+
+export function handlePostSelectionBorder (gate) {
+    const step = circuit.getQubit(gate.owner).argfindGate(gate);
+    const canvas = document.getElementById('canvas');
+    const oldBorder = document.getElementById('border-wire' + step);
+    
+    // remove old border
+    if (oldBorder) canvas.removeChild(oldBorder);
+
+    // paint new border if display shows postselection
+    if (gate.display > 0) circuit.drawBorderLine(step);
 }
