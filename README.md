@@ -20,10 +20,11 @@ The UI offers a variety of user-friendly actions:
 * Spawn new steps by shoving dragged gates in-between existing steps.
 * Empty steps are deleted automatically.
 * Add desired exponents to input-armed gates.
+* Apply postselection to desired qubits by `ALT + click`ing on measurement gates. 
 * `Left-click` on the qubit states to shuffle among the standard starting states.
 * `CTRL + Left-click` on the qubit states to shuffle between register colors. Neighboring register borders
   become unified into one.
-* Perform the last two actions while pressing `SHIFT` to revert to default state.
+* Perform the previous two actions while pressing `SHIFT` to revert to default state.
 * See circuit-relevant stats, like `#qubits`, `#gates`, `#steps`, on the live counters.
 * Export the current circuit layout as JSON by pressing the `Export` button or `CTRL + s`.
 * Import new circuit layout from valid JSON through the `Import` button or by pressing `CTRL + SHIFT + s`.
