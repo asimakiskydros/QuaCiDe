@@ -36,6 +36,7 @@ The UI offers a variety of user-friendly actions:
 
 ## Demo
 Here's a quick demo covering some of the most basic features:
+
 ![demo-gif](https://github.com/asimakiskydros/QuaCiDe/blob/main/demos/demo-1.gif)
 
 ## About
