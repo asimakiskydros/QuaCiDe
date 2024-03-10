@@ -21,8 +21,8 @@ class Qubit {
         this._body.id = 'qubit' + id;
         this._body.style.top = topPixels + 'px';
         this._body.style.display = 'flex';
-        this._wire = this._body.querySelector('.qubit-wire');
-        this._state = this._body.querySelector('.qubit-state');
+        this._wire = this._body.querySelector('qubit-wire');
+        this._state = this._body.querySelector('qubit-state');
 
         // add state shuffling functionality when clicking state
         this._state.addEventListener('click', (e) => {
@@ -174,7 +174,7 @@ class Qubit {
 
         // inform lookup of new qubit-bit positions
         this._bitPositions = ''
-        for (let i = 0; i < this.weight; i++) this._bitPositions += i <= pos ? 'q' : 'b';
+        for (let i = 0; i < this.weight + 1; i++) this._bitPositions += i <= pos ? 'q' : 'b';
     }
     /**
      * Informs whether the qubit has collapsed at given position.

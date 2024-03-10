@@ -7,7 +7,7 @@ import { Qubit }      from './qubit.js';
 
 // modal buttons
 const selectParamsNote    = document.getElementById('selectParamsDesc');
-const loadingTexture      = document.getElementById('loadingTexture');
+const loadingTexture      = document.querySelector('loading-texture');
 const noOutputsNote       = document.getElementById('noOutputMsg');
 const countsCheckbox      = document.getElementById('countsCheckbox');
 const ampsCheckbox        = document.getElementById('ampsCheckbox');
@@ -24,10 +24,10 @@ const checkboxes          = [countsCheckbox, ampsCheckbox, unitaryCheckbox];
 export const serverIP = 'http://127.0.0.1:5000';
 
 // fetch execution window modal
-export const modal = document.getElementById('setupModal');
+export const modal = document.querySelector('modal');
 
 // div containers for the graphs
-const container = document.getElementById('outputContainer');
+const container = document.querySelector('output-screen');
 
 let canvasCounts, canvasAmps, canvasUnitary, abortController;
 
@@ -572,11 +572,10 @@ export function changeGateDisplay (event, gate, textures, labels, iconsDir) {
 
 export function handlePostSelectionBorder (gate) {
     const step = circuit.getQubit(gate.owner).argfindGate(gate);
-    const canvas = document.getElementById('canvas');
     const oldBorder = document.getElementById('border-wire' + step);
     
     // remove old border
-    if (oldBorder) canvas.removeChild(oldBorder);
+    if (oldBorder) document.querySelector('circuit-canvas').removeChild(oldBorder);
 
     // paint new border if display shows postselection
     if (gate.display > 0) circuit.drawBorderLine(step);

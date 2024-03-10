@@ -3,22 +3,16 @@
     including the 'Run Circuit' button.
 */
 
-/* (False) Middle subsection of the toolbox.
-   Declared like this to use toolbox title-hr as a delimiter.
- */
- .execution-container {
-    position: relative;
-    margin-top: 50px;
-}
-
-/* (True) Middle subsection of the toolbox, containing the execution button.
+/* Middle subsection of the toolbox, containing the execution button.
    Desc: invisible rectangle between the gate and help corners, marginalized
          from the top and left.
 */
-.run-button-container {
+run-button-list {
     position: relative;
-    margin-top: 5px;
-    left: 5%;
+    display: grid;
+    place-items: center;
+    margin-top: 30px;
+    margin-bottom: 30px;
 }
 
 /* Run Circuit button, summons modal.
@@ -58,7 +52,7 @@
          inoperable while the modal is active. Centers the
          modal UI.
 */
-.modal {
+modal {
     display: none;
     position: fixed;
     top: 0;
@@ -75,7 +69,7 @@
    Desc: Sizable white wide rectangle, centered.
          Casts a gray shadow to highlight hierarchy.
 */
-.modal-container {
+modal-body {
     position: relative;
     background-color: white;
     border-radius: 5px;
@@ -88,7 +82,7 @@
    Desc: centered, marginalized from every side,
          justified to the end of the flexbox.
 */
-.modal-counts-extra-option {
+modal extra-parameter {
     position: relative;
     margin: 5px;
     display: flex;
@@ -98,11 +92,11 @@
 /* Bottom row of divs.
    Desc: centered, marginalized from the top.
 */
-.modal-buttons-container {
+modal buttons-col {
     position: relative;
     display: grid;
     place-items: center;
-    margin-top: 120px;
+    margin-top: 115px;
 }
 
 /* Modal toolbox buttons.
@@ -141,7 +135,7 @@
    Desc: long lightgray rectangle, covers most
          of the length of the modal, curved edges.
 */
-.modal-toolbox {
+modal-toolbox {
     margin: 10px;
     position: absolute;
     width: 200px;
@@ -250,7 +244,7 @@
    Desc: same sized letters as the buttons, black, bold,
          unhighlightable.
 */
-.modal-label {
+modal label {
     font-family: 'Times New Roman', Times, serif;
     font-size: 17px;
     font-weight: bold;
@@ -261,7 +255,7 @@
    Desc: invisible quasi-square, left-justified, marginalized
          from all sides.
 */
-.modal-rest-container {
+modal display {
     margin: 10px;
     position: absolute;
     width: 470px;
@@ -275,7 +269,7 @@
          background, thin black border, marginalized
          from every side, centers contents.
 */
-.modal-output-container {
+modal display output-screen {
     margin: 10px;
     position: flex;
     width: 450px;
@@ -295,7 +289,7 @@
          positioned just below the output container,
          dynamically center justified.
 */
-.modal-options-section {
+selections-menu {
     position: relative;
     margin: 10px;
     display: flex;
@@ -307,7 +301,7 @@
    Desc: mini version of the help buttons,
          marginalized from every side, inline.
 */
-.modal-option-button {
+.selection {
     background-color: rgb(165, 159, 159);
     color: black;
     font-weight: bold;
@@ -326,31 +320,35 @@
 /* The option represented by the button is projected with images.
    Such images should encompass the entire area of the button.
 */
-.modal-options-button img {
+.selection img {
     max-width: 100%;
     max-height: 100%;
 }
 
 /* Summon border on hover to show interactability.
 */
-.modal-option-button:hover {
+.selection:hover {
     border: 1px solid black;
 }
 
 /* Context label for before the simulation runs.
    Desc: small black letters, centered.
 */
-.help-note {
+modal help-note {
     font-family: 'Times New Roman', Times, serif;
     font-size: 15px;
     position: relative;
     text-align: center;
 }
 
+loading-texture {
+    text-align: center;
+}
+
 /* Loading circle animation for when the simulation runs.
    Desc: medium-sized gray spinning circle, centered.
 */
-.loading-circle {
+loading-circle {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -371,7 +369,7 @@
 /* Context label paired with the loading circle for when the simulation runs.
    Desc: small black letters, centered, positioned just below the spinning circle.
 */
-.loading-circle-description {
+loading-texture help-note {
     font-family: 'Times New Roman', Times, serif;
     font-size: 13px;
 }

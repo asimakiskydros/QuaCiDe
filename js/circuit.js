@@ -5,7 +5,7 @@ import { toggleRunButton } from './functions.js';
 import { handleExponential } from './behaviors.js';
 
 // tools
-const canvas = document.getElementById('canvas');
+const canvas = document.querySelector('circuit-canvas');
 const identityGate = document.getElementById('identityGate');
 let undoStack = [], redoStack = [];
 
@@ -404,7 +404,7 @@ class Circuit {
 
         controlWire.className = type;
         controlWire.id = type + col + start + end;
-        controlWire.style.left = (col + 5.77) * Constants.GATE_DELIMITER + 'px';
+        controlWire.style.left = (col + 1.82) * Constants.GATE_DELIMITER + 'px';
         controlWire.style.top = Constants.TOP_BOUNDARY + (1 + 2 * start) * Constants.WIRE_HALF_ORBIT + Constants.BLANK_SPACE + 'px';
         controlWire.style.height = (end - start) * 50 + 'px';
         if (connectorStyle === 2)
@@ -423,8 +423,8 @@ class Circuit {
         const border = document.createElement('div');
         border.id = 'border-wire' + col;
         border.className = 'border-wire';
-        border.style.left = (col + 5.79) * Constants.GATE_DELIMITER + 'px';
-        border.style.top = Constants.TOP_BOUNDARY - 20 + 'px';
+        border.style.left = (col + 1.85) * Constants.GATE_DELIMITER + 'px';
+        border.style.top = Constants.TOP_BOUNDARY + 'px';
         border.style.height = this._qubits.length * 50 + 30 + 'px';
 
         // find the postselected ket state
@@ -455,10 +455,10 @@ class Circuit {
      * unified into one. Color shuffles in order by right-clicking the ket.
      */
     updateRegisterBorders() {
-        const mainContainer = document.getElementById('mainContainer');
+        const body = document.querySelector('body');
         // remove all previous borders
         for (const regBorder of document.querySelectorAll('.register-border'))
-            mainContainer.removeChild(regBorder);
+            body.removeChild(regBorder);
 
         let currentColor = null, regBorder = null;
 
@@ -471,7 +471,7 @@ class Circuit {
             }
             // the color changed and the register holds at least one ket, draw to screen
             if (regBorder)
-                mainContainer.appendChild(regBorder);
+                body.appendChild(regBorder);
 
             // new color, initialize new register rectangle
             if (qubit.registerColor === '' || qubit.registerColor) {
@@ -479,10 +479,10 @@ class Circuit {
                 regBorder.className = 'register-border';
                 // '10' magic number to align the top and left of the reg border 
                 // to the top and left of the ket.
-                regBorder.style.top = qubit.state.getBoundingClientRect().top - 10 + 'px';
-                regBorder.style.left = qubit.state.getBoundingClientRect().left  - 10 + 'px';
-                regBorder.style.height = qubit.state.clientHeight + 'px';
-                regBorder.style.width = qubit.state.clientWidth + 'px';
+                regBorder.style.top = qubit.state.getBoundingClientRect().top + 'px';
+                regBorder.style.left = qubit.state.getBoundingClientRect().left + 'px';
+                regBorder.style.height = qubit.state.clientHeight - 2 + 'px';
+                regBorder.style.width = qubit.state.clientWidth - 2 + 'px';
                 regBorder.style.border = qubit.registerColor ? `2px solid ${qubit.registerColor}` : '';
                 currentColor = qubit.registerColor;
             }
@@ -493,7 +493,7 @@ class Circuit {
             }
         }
         // add any remaining reg rectangles
-        if (regBorder) mainContainer.appendChild(regBorder);
+        if (regBorder) body.appendChild(regBorder);
     }
     /**
      * Wipes the current circuit layout and builds a new one, as 

@@ -8,7 +8,44 @@
 */
 
 body {
-    overflow-x: hidden; /* note to self: reimplement this when you add a qubit pallette to the canvas*/
+    overflow-x: hidden; 
     overflow-y: hidden;
     font-family: 'Times New Roman', Times, serif;
+}
+
+/*  The main headline at the top of the page.
+    Desc: Big, centered white letters inside 
+          a dark gray rectangle.
+*/
+main-title {
+    text-align: center;
+    padding: 20px;
+    background-color: #333;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    display: block;
+}
+
+/* Customization for the main title.
+   Desc: Lightgreen shader for the text.
+*/
+main-title span {
+    color: rgb(77, 187, 77);
+}
+
+/* The center-stage for the qubits to spawn.
+   Desc: invisible, encompassing the area
+         between the title and the counters.
+*/
+circuit-canvas {
+    position: relative;
+    display: block;
+    height: 87vh;
+    margin-top: 20px;
+    margin-bottom: 5px;
+    left: 11%;
+    right: 0;
+    border: 1px solid black;
+    border-radius: 10px;
 }

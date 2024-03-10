@@ -6,7 +6,7 @@ import * as Behaviors from './behaviors.js';
 // initialize circuit
 export const circuit = new Circuit(STARTING_QUBITS);
 // fetch toolbox
-export const toolbox = document.querySelectorAll('.gate');
+export const toolbox = document.querySelectorAll('gate');
 
 document.addEventListener('DOMContentLoaded', function () {
     for (const gate of toolbox) {

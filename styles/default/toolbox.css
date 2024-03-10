@@ -8,8 +8,8 @@
          the entire available height,
          left-justified.
 */
-.toolbox-palette {
-    width: 200px;
+toolbox {
+    width: 11%;
     height: 100%;
     background-color: lightgray;
     position: fixed;
@@ -20,12 +20,13 @@
 /* The toolbox title, also used as a delimiter. 
    Desc: Big dark gray letters, centered.
 */
-.toolbox-title {
+toolbox-title {
     padding: 10px;
     color: #333;
     font-size: 30px;
     font-weight: bold;
     text-align: center;
+    display: block;
 }
 
 /* Line seperator between toolbox subsections.
@@ -35,36 +36,41 @@
 hr {
     border: none;
     border-top: 1px solid #333;
+    margin: 15px;
 }
 
 /* Top subsection of toolbox, contains gates.
    Desc: vertical, encompasses more than half
          of the toolbox vertically, left-justified.
 */
-.gates-corner-container {
+gate-list {
     position: relative;
-    height: 490px;
+    height: 500px;
+    display: block;
+    margin-bottom: 60px;
 }
 
 /* Gate category container (e.g. Half-Turns).
    Desc: malleable invisible container, marginalized
          from the top and the left.
 */
-.gate-section-container {
+gate-list section {
     position: relative;
     margin-bottom: 10px;
     left: 5%;
+    display: block;
 }
 
 /* Gate category title.
    Desc: gray letters, left-justified,
          medium-sized.
 */
-.gate-section-title {
+gate-list label {
     padding: 10px;
     color: #333;
     font-size: 24px;
     text-align: left;
+    display: block;
 }
 
 /* Gate square represenation for the quantum operators.
@@ -72,7 +78,7 @@ hr {
          from the right and top, aligned vertically from the
          top, shadowed only when inside the toolbox.
 */
-.gate {
+gate {
     width: 40px;
     height: 40px;
     display: inline-block;
@@ -92,7 +98,7 @@ hr {
          above all other elements in the toolbox,
          initially invisible.
 */
-.gate-context {
+gate-context {
     display: none;
     background-color: #333;
     color: white;
@@ -101,6 +107,12 @@ hr {
     white-space: nowrap;
     position: absolute;
     z-index: 10;
+}
+
+/* Force the context bubble title to green.
+*/
+gate-context b {
+    color: rgb(77, 187, 77);
 }
 
 /* Linear algebra matrix view structure.
@@ -142,7 +154,7 @@ hr {
    signal interactability. Also spawn the border,
    in the case the gate has special textures.
 */
-.gate:hover {
+gate:hover {
     border: 1px solid black !important;
     background-color: rgb(175, 236, 175) !important;
 }
@@ -150,7 +162,7 @@ hr {
 /* Big black bold letters inside the gates,
    as per standard.
 */
-.gate span {
+gate span {
     position: absolute;
     font-weight: bold;
     top: 50%;
@@ -161,14 +173,14 @@ hr {
 
 /* Exponential lettering for the text inside the gates.
 */
-.gate sup {
+gate sup {
     vertical-align: super;
     font-size: 12px;
 }
 
 /* Subscript lettering for the text inside the gates.
 */
-.gate sub {
+gate sub {
     vertical-align: super;
     font-size: 12px;
 }
@@ -176,7 +188,7 @@ hr {
 /* Special textures inside the gates are projected with images.
    Such images should span the entire area of the gate.
 */
-.gate img {
+gate img {
     max-width: 100%;
     max-height: 100%;
 }
@@ -196,20 +208,13 @@ hr {
     box-sizing: border-box;
 }
 
-/* Bottom subsection of the toolbox, contains helpful buttons.
-   Desc: invisible rectangle, placed just above the previous
-         container.
-*/
-.help-corner-container {
-    position: relative;
-}
-
 /* Row of buttons. Divs inside it are aligned vertically.
    Desc: invisible malleable rectangle, marginalized from the top
    and the left.
 */
-.help-buttons-container {
+buttons-row {
     position: relative;
+    display: block;
     margin-top: 5px;
     left: 5%;
 }
@@ -259,4 +264,14 @@ hr {
 */
 .long-button:hover {
     border: 1px solid black;
+}
+
+/* Small display of the designer version at the bottom of the toolbox.
+   Desc: centered, dark gray text, marginalized from the top.
+*/
+version-label {
+    text-align: center; 
+    display: block;
+    margin-top: 5px;
+    color: #333;
 }

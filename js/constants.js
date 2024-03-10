@@ -1,7 +1,7 @@
 /**
  * The blank region seperating the webpage title and the first qubit.
  */
-export const TOP_BOUNDARY = 70;
+export const TOP_BOUNDARY = 40;
 
 /**
  * The region delimiter between qubits.
