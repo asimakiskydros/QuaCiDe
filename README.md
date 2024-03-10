@@ -34,6 +34,11 @@ The UI offers a variety of user-friendly actions:
 * Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.
 * Receive output as interactable and downloadable plots.
 
+## Demo
+Here's a quick demo covering some of the most basic features:
+
+![demo-gif](https://github.com/asimakiskydros/QuaCiDe/blob/main/demos/demo-1.gif)
+
 ## About
 * This project acts as my Bachelor's thesis. 
 * This project is not yet meant for F/OSS distribution and usage.
