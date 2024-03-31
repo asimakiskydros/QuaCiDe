@@ -1,60 +1,59 @@
-import { STARTING_QUBITS } from './constants.js';
+import { Tab } from './tab.js';
 import { Circuit } from './circuit.js';
-import { Gate } from './gate.js';
+import { STARTING_QUBITS } from './constants.js';
 import * as Behaviors from './behaviors.js';
+import * as Elements  from './elements.js';
 
+// initialize tab stack
+export const tabs = [];
 // initialize circuit
 export const circuit = new Circuit(STARTING_QUBITS);
+// save initial circuit template for later
+export const initialSnapshot = circuit.makeTemplate();
 // fetch toolbox
 export const toolbox = document.querySelectorAll('gate');
 
 document.addEventListener('DOMContentLoaded', function () {
-    for (const gate of toolbox) {
-        /**
-         * On clicking a gate positioned on the toolbox,
-         * spawn an exact copy and feed it drag and drop
-         * and fast delete behaviors.
-         */
-        gate.addEventListener('mousedown', (e) => {
-            // activate only on left click
-            if (e.button !== 0) return;
+    /**
+     * On pressing the cross button, add a fresh tab.
+     */
+    Elements.includeTabButton.addEventListener('click', () => {
+        const tab = new Tab(tabs.length);
+        if (tabs.length === 0) tab.tablink.style.animation = 'none';
+        tabs.push(tab);
+        tab.tablink.click();
+    });
 
-            const copy = new Gate(gate);
-            // this is needed the first time to move the newly created gate appropriately. idk why
-            Behaviors.handleDragNdrop(copy);
-            // move copy to cursor
-            copy.move(e.clientX, e.clientY);
+    // spawn initial tab
+    includeTabButton.click();
+
+    for (const gate of toolbox) Behaviors.initializeGate(gate);
+
+    /**
+     * disable the execution button if no checkboxes are checked
+     */
+    for (const checkbox of Behaviors.checkboxes)
+        checkbox.addEventListener('change', () => {
+            Behaviors.exeButton.disabled = !Behaviors.checkboxes.some(cb => cb.checked);
+
+            if (checkbox === Behaviors.checkboxes[0]) {
+                Behaviors.backendList.disabled = !checkbox.checked;
+                Behaviors.shotsBox.disabled = !checkbox.checked; 
+            }
         });
-        /**
-         * On hovering a gate on the toolbox, show correct
-         * context menu, positioned just above it.
-         * Vanish it again on mouseout.
-         */
-        gate.addEventListener('mouseover', () => {
-            const contextMenu = document.getElementById(gate.id + 'Context');
-            const gateRect = gate.getBoundingClientRect();
-            contextMenu.style.display = 'inline-block';
-            contextMenu.style.top = gateRect.bottom + 'px';
-            contextMenu.style.left = gateRect.left + 'px';
-        })
-        gate.addEventListener('mouseout', () => {
-            const contextMenu = document.getElementById(gate.id + 'Context');
-            contextMenu.style.display = 'none';
-        })
-    }
     
     /**
      * Wipe the circuit clean on clicking the 'Clear' button
      * inside the toolbox. Sets all kets to ground state and
      * removes all register colors.
      */
-    document.getElementById('clearButton').addEventListener('click', Behaviors.handleClear);
+    Elements.clearButton.addEventListener('click', Behaviors.handleClear);
 
     /**
-     * Export relevant circuit info to .JSON on clicking
+     * Export relevant circuit info to .JSONLines on clicking
      * the 'Export' button inside the toolbox.
      */
-    document.getElementById('exportButton').addEventListener('click', Behaviors.exportToJSON);
+    document.getElementById('exportButton').addEventListener('click', Behaviors.handleExport);
 
     /**
      * Build circuit from user-given info through .JSON's on clicking the
@@ -63,17 +62,9 @@ document.addEventListener('DOMContentLoaded', function () {
      *     after it deduces it valid.
      *  2. Opens File Explorer.
      */
-    /*1.*/document.getElementById('fileInput').addEventListener('change', (e) => {
-        let file = e.target.files[0];
-
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = Behaviors.importFromJSON;
-            reader.readAsText(file);
-        }
-    });
+    /*1.*/Elements.fileInputButton.addEventListener('change', Behaviors.handleImport);
     /*2.*/document.getElementById('importButton').addEventListener('click', () => {
-        document.getElementById('fileInput').click();
+        Elements.fileInputButton.click();
     });
 
     /**
@@ -100,19 +91,19 @@ document.addEventListener('DOMContentLoaded', function () {
      * Change output slide to the Counts histogram plot on clicking the
      * 'show Counts' option inside the modal.
      */
-    document.getElementById('showCountsButton').addEventListener('click', () => { Behaviors.togglePlot('counts') });
+    Elements.countsOptionButton.addEventListener('click', () => { Behaviors.togglePlot('counts') });
 
     /**
      * Change output slide to the Amplitudes heatmap plot on clicking the
      * 'show Amplitudes' option inside the modal.
      */
-    document.getElementById('showAmpsButton').addEventListener('click', () => { Behaviors.togglePlot('amplitudes') });
+    Elements.ampsOptionButton.addEventListener('click', () => { Behaviors.togglePlot('amplitudes') });
 
     /**
      * Change output slide to the Unitary matrix plot on clicking the 
      * 'show Unitary' option inside the modal.
      */
-    document.getElementById('showUnitaryButton').addEventListener('click', () => { Behaviors.togglePlot('unitary') });
+    Elements.unitaryOptionButton.addEventListener('click', () => { Behaviors.togglePlot('unitary') });
 
     /**
      * Run the execution script on the described circuit with the given parameters
@@ -123,12 +114,39 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Cancel the youngest action taken and revert the state of the circuit accordingly.
      */
-    document.getElementById('undoButton').addEventListener('click', () => { circuit.loadPreviousSnapshot(); });
+    Elements.undoButton.addEventListener('click', () => { circuit.loadPreviousSnapshot(); });
 
     /**
      * Take back the youngest undo action and bring the circuit to the state it was before.
      */
-    document.getElementById('redoButton').addEventListener('click', () => { circuit.loadNextSnapshot(); });
+    Elements.redoButton.addEventListener('click', () => { circuit.loadNextSnapshot(); });
+
+    /**
+     * Summon the gate builder window on clicking the 'add gate' button.
+     */
+    document.getElementById('addGate').addEventListener('click', Behaviors.handleGateBuilder);
+
+    /**
+     * Close the gate builder window on clicking the 'close' button.
+     */
+    document.getElementById('closeGatebuilder').addEventListener('click', Behaviors.closeGatebuilder);
+
+    /**
+     * Create the new custom gate spawner based on specified inputs and add it to the toolbox.
+     */
+    document.getElementById('createGateButton').addEventListener('click', () => { Behaviors.createCustomGate(); });
+
+    /**
+     * Close the gate builder window if the user clicks out of bounds.
+     */
+    Behaviors.gatebuilder.addEventListener('click', (e) => {
+        if (e.target === Behaviors.gatebuilder) Behaviors.closeGatebuilder();
+    });
+
+    /**
+     * Disable the unitary matrix input widgets if the corresponding radio isn't selected.
+     */
+    for (const radio of document.querySelectorAll('input[name="source"]')) radio.addEventListener('change', Behaviors.handleUnitaryMatrixImport);
 
     /**
      * Add keyboard shortcuts for common actions.
@@ -139,6 +157,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Escape -> close modal
             if (e.key === 'Escape') Behaviors.closeModal();
             return;            
+        }
+        // likewise, if the gatebuilder is up allow only gb-specific actions
+        if (Behaviors.gatebuilder.style.display !== 'none') {
+            // Escape -> close gatebuilder
+            if (e.key === 'Escape') Behaviors.closeGatebuilder();
+            return;
         }
 
         if (e.ctrlKey && e.shiftKey && (e.key === 'z' || e.key === 'Z'))
@@ -153,12 +177,12 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (e.ctrlKey && e.shiftKey && (e.key === 's' || e.key === 'S')) {
             // CTRL + SHIFT + S -> Import
             e.preventDefault();
-            document.getElementById('fileInput').click();
+            Elements.fileInputButton.click();
         }
         else if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             // CTRL + S -> Export
             e.preventDefault();
-            Behaviors.exportToJSON();
+            Behaviors.handleExport();
         }
         else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
             // CTRL + C -> Clear

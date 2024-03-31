@@ -1,35 +1,27 @@
 import * as Functions from './functions.js';
 import * as Alerts    from './alerts.js';
-import { circuit }    from './main.js';
+import * as Elements  from './elements.js';
 import { Circuit }    from './circuit.js';
 import { Gate }       from './gate.js';
 import { Qubit }      from './qubit.js';
+import { tabs } from './main.js';
+import { Tab } from './tab.js';
+import { circuit } from './main.js';
 
-// modal buttons
-const selectParamsNote    = document.getElementById('selectParamsDesc');
-const loadingTexture      = document.querySelector('loading-texture');
-const noOutputsNote       = document.getElementById('noOutputMsg');
-const countsCheckbox      = document.getElementById('countsCheckbox');
-const ampsCheckbox        = document.getElementById('ampsCheckbox');
-const unitaryCheckbox     = document.getElementById('unitaryCheckbox');
-const countsOptionButton  = document.getElementById('showCountsButton');
-const ampsOptionButton    = document.getElementById('showAmpsButton');
-const unitaryOptionButton = document.getElementById('showUnitaryButton');
-const exeButton           = document.getElementById('executeButton');
-const backendList         = document.getElementById('backendList');
-const shotsBox            = document.getElementById('shotsInputBox');
-const checkboxes          = [countsCheckbox, ampsCheckbox, unitaryCheckbox];
-
+// modal checkboxes
+export const exeButton   = document.getElementById('executeButton');
+export const backendList = document.getElementById('backendList');
+export const shotsBox    = document.getElementById('shotsInputBox');
+// compile all checkboxes for easier use
+export const checkboxes = [Elements.countsCheckbox, Elements.ampsCheckbox, Elements.unitaryCheckbox];
 // set server ip
 export const serverIP = 'http://127.0.0.1:5000';
-
 // fetch execution window modal
 export const modal = document.querySelector('modal');
+// fetch gatebuilder window
+export const gatebuilder = document.querySelector('gatebuilder');
 
-// div containers for the graphs
-const container = document.querySelector('output-screen');
-
-let canvasCounts, canvasAmps, canvasUnitary, abortController;
+let canvasCounts, canvasAmps, canvasUnitary, abortController, createdGates = 0;
 
 /**
  * Feeds drag and drop behavior to the given gate.
@@ -37,6 +29,7 @@ let canvasCounts, canvasAmps, canvasUnitary, abortController;
  */
 export function handleDragNdrop (gate) {
     let dragging = true;
+
     // summon extra qubit
     circuit.appendQubit();
     // refresh borders to account for the new qubit
@@ -68,7 +61,7 @@ export function handleDragNdrop (gate) {
         circuit.connectSwaps(gate);
 
         // indexize and fetch the qubit wire hovered by the cursor
-        let [relativePosition, qubit] = Functions.localize(e, gate, circuit);
+        let [relativePosition, qubit] = Functions.localize(e, gate);
 
         // keep moving if not currently hovering a qubit
         if (!qubit) {
@@ -97,7 +90,7 @@ export function handleDragNdrop (gate) {
         // if the hovered position is an integer, there is a potential for control/swap connection
         // test the defined column for connectivity and if it passes, calculate the
         // relevant indeces to draw the line.
-        if (Number.isInteger(relativePosition)){
+        if (Number.isInteger(relativePosition)) {
             // fetch hovered qubit index
             let row;
             for (row = 0; row < circuit.qubits.length; row++) if (circuit.qubits[row] === qubit) break;
@@ -148,7 +141,7 @@ export function handleDragNdrop (gate) {
         if (!dragging) return;
 
         // save current state
-        circuit.saveSnapshot();
+        const snapshot = circuit.makeTemplate();
 
         // terminate dragging
         dragging = false;
@@ -165,67 +158,115 @@ export function handleDragNdrop (gate) {
         circuit.detachGateFromQubit(gate, gate.owner)
 
         // fetch hovered qubit and cursor relative position
-        let [relativePosition, qubit] = Functions.localize(e, gate, circuit);
+        let [relativePosition, qubit] = Functions.localize(e, gate);
 
         if (qubit) {
             // attach the gate ontop the wire
             circuit.attachGateToQubit(gate, qubit, relativePosition);
-            snapped = true;
+            snapped = true; 
         }
 
         // if not attached to any wire, kill gate
         if (!snapped) gate.erase();
 
+        circuit.saveSnapshot(snapshot);
         circuit.refresh();
     });
 }
 
 /**
- * Parses the result of the event from JSON and builds the described circuit
- * by creating and adding the correct gates back one-by-one (and then feeding
- * them dragNdrop behavior again).
+ * Builds a new tab as described by the user-given file.
+ * This file is expected to be of identical format as the one handleExport returns,
+ * and every object is validate beforehand. 
  * 
- * Thwarts execution if the given file doesn't contain the expected format.
- * @param {*} event The event that triggered this behavior.
+ * All custom gates specified into this file that cannot be found in exact identical format
+ * (same symbol, title, context and definition) are created anew first, then the final 
+ * circuit gets created and shown. The tab name is the filename without the extension.
+ * @param {*} event The event that proc-ed this behavior.
  */
-export function importFromJSON (event) {
-    try {
-        const template = JSON.parse(event.target.result);
-        // ensure given file is correct by examining fetched list
-        Functions.assert(template !== null && typeof template === 'object', 'Unrecognized input file format.');
-        for (const qubit of Object.values(template)) {
-            if (typeof qubit !== 'object') continue;  // skip the .length value
+export function handleImport (event) {
+    const file = event.target.files[0];
 
-            Functions.assert(Qubit.getDefaultStates().includes(qubit.state), 'Unrecognized qubit state inside input file.');
-            Functions.assert(Array.isArray(qubit.gates), 'Unrecognized gate format');
-            for (const listing of qubit.gates)
-                // try to summon the div with id the listing string. If the listing is correct,
-                // there will exist one element that bears such an id (the gates in the toolbox).
-                Functions.assert(document.getElementById(listing.split('<!@DELIMITER>')[0]), 'Invalid gate inside input file.')
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+        const lines = reader.result.split('\r\n');
+        const currentCustoms = Elements.customGatesList.querySelectorAll('gate');
+
+        try { for (let i = 0; i < lines.length; i++) {
+            // fetch JSON line
+            const line = lines[i].trim()
+            const template = JSON.parse(line);
+            // validate represented object
+            Functions.validateObject(template);
+
+            if (i < lines.length - 1) {
+                let exists = false;
+                // if its any object before the last one, its a used custom gate.
+                // create it if not existing
+                for (const gate of currentCustoms) if (
+                    gate.id !== '^' && 
+                    gate.id !== 'templateCustomGate' && 
+                    gate.definition === line  // compare the two definition objects as strings to ensure equality by value
+                    ) {
+                        exists = true;
+                        break;
+                    }
+                if (!exists) createCustomGate(template);
+            }
+            else {
+                // if its the last object, then it is the circuit representation.
+                // spawn a new tab and show it
+                const tab = new Tab(tabs.length);
+                tab.snapshot = template;
+                tab.title = file.name.split('.')[0];
+                tabs.push(tab);
+                tab.tablink.click();
+            }
+        }}
+        catch (error) {
+            Alerts.alertWrongImport();
+            console.error(error.message);
         }
-        circuit.saveSnapshot();
-        circuit.buildFromTemplate(template);
     }
-    catch (err) {
-        Alerts.alertWrongImport();
-        console.error(err.message);
-    }
+    reader.readAsText(file);
 }
 
 /**
- * Compiles the current circuit into a template object containing all the 
- * current state information.
- * Then it puts that stringified object in a file and downloads it to the user.
+ * Compiles all used custom gate definitions and the loaded circuit
+ * as individual JSON strings into an array.
+ * 
+ * The custom gate definitions are included in the file by order of 
+ * creation, meaning the oldest (used) gate is first and the newest (used)
+ * gate is second-to-last; the circuit architecture is guaranteed last.
+ * @returns The array containing all relevant JSON strings as explained.
  */
-export function exportToJSON () {
-    const template = circuit.makeTemplate();       
+export function compileLoaded () {
+    const payload = [];
+    const template = JSON.stringify(circuit.makeTemplate());       
+    for (const gate of Elements.customGatesList.querySelectorAll('gate'))
+        if (gate.id !== '^' && gate.id !== 'templateCustomGate' && template.includes(gate.id))
+            // include only actively used custom gates
+            payload.push(gate.definition);
+    // include the circuit template last for tractability
+    payload.push(template);
+    return payload
+}
+
+/**
+ * Creates a JSONLines file containing the current circuit snapshot and all used custom gates
+ * in it, then downloads it to the user as a .quacide file.
+ */
+export function handleExport () {
+    // create download anchor
     const url = window.URL.createObjectURL(
-        new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' })
+        new Blob([compileLoaded().join('\r\n')], { type: 'application/json' })
     );
     const anchor = document.createElement('a');
     anchor.style.display = 'none';
     anchor.href = url;
-    anchor.download = 'circuit.json';
+    anchor.download = `${circuit.title}.quacide`;
 
     // append anchor to body and trigger download
     document.body.appendChild(anchor);
@@ -251,8 +292,8 @@ export function disableModalWidgets (state) {
     }
     else {
         exeButton.disabled = !checkboxes.some(cb => cb.checked);
-        backendList.disabeld = !countsCheckbox.checked;
-        shotsBox.disabled = !countsCheckbox.checked;
+        backendList.disabeld = !Elements.countsCheckbox.checked;
+        shotsBox.disabled = !Elements.countsCheckbox.checked;
     }
 }
 
@@ -261,14 +302,14 @@ export function disableModalWidgets (state) {
  */
 export function deletePlots () {
     for (const canvas of [canvasCounts, canvasAmps, canvasUnitary])
-        if (canvas && container.contains(canvas)) container.removeChild(canvas);
+        if (canvas && Elements.container.contains(canvas)) Elements.container.removeChild(canvas);
 }
 
 /**
  * Hide all plot buttons.
  */
 export function vanishPlotButtons () {
-    for (const button of [countsOptionButton, ampsOptionButton, unitaryOptionButton])
+    for (const button of [Elements.countsOptionButton, Elements.ampsOptionButton, Elements.unitaryOptionButton])
         button.style.display = 'none';
 }
 
@@ -285,9 +326,9 @@ export function closeModal () {
     deletePlots();
     vanishPlotButtons();
 
-    selectParamsNote.style.display = 'flex';
-    noOutputsNote.style.display = 'none';
-    loadingTexture.style.display = 'none';
+    Elements.selectParamsNote.style.display = 'flex';
+    Elements.noOutputsNote.style.display = 'none';
+    Elements.loadingTexture.style.display = 'none';
     modal.style.display = 'none';
 }
 
@@ -315,9 +356,9 @@ export function togglePlot (which) {
  */
 export function handleExecution () {
     // hide notes and show loading screen
-    selectParamsNote.style.display = 'none';
-    noOutputsNote.style.display = 'none';
-    loadingTexture.style.display = 'grid';
+    Elements.selectParamsNote.style.display = 'none';
+    Elements.noOutputsNote.style.display = 'none';
+    Elements.loadingTexture.style.display = 'grid';
 
     // load fresh web abort controller
     abortController = new AbortController();
@@ -331,18 +372,22 @@ export function handleExecution () {
     // disable all modal interactables while execution runs
     disableModalWidgets(true);
     
-    // fetch circuit architecture
-    const template = circuit.makeTemplate();
+    // fetch current instance info
+    const payload  = compileLoaded();
+    // retreive circuit architecture temporarily to append extra info
+    const template = JSON.parse(payload.pop())
     // fetch checkbox selections
-    template.includeCounts = countsCheckbox.checked;
-    template.includeAmps = ampsCheckbox.checked;
-    template.includeUnitary = unitaryCheckbox.checked;
+    template.includeCounts  = Elements.countsCheckbox.checked;
+    template.includeAmps    = Elements.ampsCheckbox.checked;
+    template.includeUnitary = Elements.unitaryCheckbox.checked;
     // fetch shots and backend from input boxes in the modal GUI
     template.shots = parseInt(
         document.getElementById('shotsInputBox').value || 
         document.getElementById('shotsInputBox').placeholder
     );
     template.backend = document.getElementById('backendList').value;
+    // re-include the padded template
+    payload.push(JSON.stringify(template));
 
     // send the circuit to qiskit and wait for the output
     fetch(`${serverIP}/parser`, {
@@ -350,7 +395,7 @@ export function handleExecution () {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(template),
+        body: payload.join('\r\n'),
         signal: abortController.signal,
     })
     .then(response => {
@@ -360,30 +405,30 @@ export function handleExecution () {
     })
     .then(results => {
         // remove loading screen and potentially leftover options
-        loadingTexture.style.display = 'none';
+        Elements.loadingTexture.style.display = 'none';
 
         // plot unitary matrix if requested
         if (results.unitary) {
-            canvasUnitary = Functions.createUnitaryPlot(container, results);
-            unitaryOptionButton.style.display = 'flex';
+            canvasUnitary = Functions.createUnitaryPlot(Elements.container, results);
+            Elements.unitaryOptionButton.style.display = 'flex';
             togglePlot('unitary');
         }
         // plot amplitudes heatmap if requested
         if (results.amplitudes) {
-            canvasAmps = Functions.createAmpsPlot(container, results);
-            ampsOptionButton.style.display = 'flex';
+            canvasAmps = Functions.createAmpsPlot(Elements.container, results);
+            Elements.ampsOptionButton.style.display = 'flex';
             togglePlot('amplitudes');
         }
         // plot counts histogram if requested
         if (results.counts) {
-            canvasCounts = Functions.createCountsPlot(container, results);
-            countsOptionButton.style.display = 'flex';
+            canvasCounts = Functions.createCountsPlot(Elements.container, results);
+            Elements.countsOptionButton.style.display = 'flex';
             togglePlot('counts');
         }
         
         if (!results.counts && !results.amplitudes && !results.unitary)
             // reveal the no outputs label in case no plots appear
-            noOutputsNote.style.display = 'flex';
+            Elements.noOutputsNote.style.display = 'flex';
 
         // re-enable all buttons
         disableModalWidgets(false);
@@ -434,25 +479,23 @@ export function fastCopyGate (e, gate) {
     const i = qubit.argfindGate(gate);
     if (i === null) return;
     
-    if (e.shiftKey) {
-        circuit.saveSnapshot();
+    circuit.saveSnapshot();
+    // copy the gate along with its (potential) power
+    const copy = new Gate(document.getElementById(gate.type), gate.span);
+    if (copy.powerBox) copy.powerBox.value = gate.powerBox.value;
+    
 
-        // copy the gate along with its (potential) power
-        const copy = new Gate(document.getElementById(gate.type));
-        if (copy.powerBox) copy.powerBox.value = gate.powerBox.value;
-
+    if (e.shiftKey)
         // summon a new column for the new gate
         circuit.attachGateToQubit(copy, qubit, i + 0.5);
-        circuit.refresh();
+    else {
+        // for vertical copying, the new gate must jump over the entire og gate's span.
+        const jump = circuit.argfindQubit(qubit) + gate.span;
+        while (jump >= circuit.qubits.length) circuit.appendQubit();
+
+        circuit.attachGateToQubit(copy, circuit.qubits[jump], i);
     }
-    else if (e.ctrlKey) {
-        circuit.prependQubit(
-            // create a new qubit below the current one
-            circuit.argfindQubit(qubit) + 1, 
-            // pad the copied gate with as many identites beforehand as needed
-            Array.from({length: i}, () => 'identityGate').concat([gate.stamp])
-        );
-    }
+    circuit.refresh();
 }
 
 /**
@@ -461,11 +504,11 @@ export function fastCopyGate (e, gate) {
  */
 export function handleClear () {
     // save current state
-    circuit.saveSnapshot();
+    const snapshot = circuit.makeTemplate();
 
     // wipe the circuit
     circuit.empty();
-    Gate.resetCounters();
+    circuit.resetCounters();
 
     for (const qubit of circuit.qubits) {
         qubit.state.textContent = '|0〉';
@@ -473,14 +516,17 @@ export function handleClear () {
     }
     circuit.updateRegisterBorders();
     circuit.refreshStatCounters();
+
+    // push saved snapshot if different
+    circuit.saveSnapshot(snapshot);
 }
 
 /**
  * Summon the execution modal if the circuit is valid.
  */
 export function handleRunButton () {                      
-    // deny execution if nan exponent was found           
-    if (Gate.erroredGates > 0) {
+    // deny execution if there are errors in the circuit           
+    if (circuit.erroredGates > 0) {
         Alerts.alertErrorsOnCircuit();
         return;
     }
@@ -492,19 +538,8 @@ export function handleRunButton () {
     // disable execution button if all options are unchecked
     exeButton.disabled = !checkboxes.some(cb => cb.checked);
     // disable backend list and shots box if counts is unchecked
-    backendList.disabled = !countsCheckbox.checked;
-    shotsBox.disabled = !countsCheckbox.checked;
-
-    // make the above behavior live on change
-    for (const checkbox of checkboxes)
-        checkbox.addEventListener('change', () => {
-            exeButton.disabled = !checkboxes.some(cb => cb.checked);
-
-            if (checkbox === countsCheckbox) {
-                backendList.disabled = !checkbox.checked;
-                shotsBox.disabled = !checkbox.checked; 
-            }
-        });
+    backendList.disabled = !Elements.countsCheckbox.checked;
+    shotsBox.disabled = !Elements.countsCheckbox.checked;
 }
 
 /**
@@ -513,6 +548,8 @@ export function handleRunButton () {
  * sit ontop of a bit.
  * @param {*} gate The examined gate.
  * @param {*} value The value of its exponent.
+ * @param {*} parent (Optional) The qubit owner of the given gate.
+ * @param {*} pos (Optional) The step/qubit position of the gate.
  */
 export function handleExponential (gate, value, parent, pos) {
     // remove previous labels
@@ -570,6 +607,10 @@ export function changeGateDisplay (event, gate, textures, labels, iconsDir) {
     return nextState;
 }
 
+/**
+ * Draw the dashed border behind the post-selected measurement gate.
+ * @param {*} gate The clicked measurement gate.
+ */
 export function handlePostSelectionBorder (gate) {
     const step = circuit.getQubit(gate.owner).argfindGate(gate);
     const oldBorder = document.getElementById('border-wire' + step);
@@ -579,4 +620,157 @@ export function handlePostSelectionBorder (gate) {
 
     // paint new border if display shows postselection
     if (gate.display > 0) circuit.drawBorderLine(step);
+}
+
+/**
+ * Summons the gate builder window.
+ * Defaults to 'from unitary' option if the current circuit is
+ * invalid.
+ */
+export function handleGateBuilder () {
+    // summon window
+    gatebuilder.style.display = 'flex';
+
+    const fromCircuitOption = document.getElementById('circ');
+    const fromUnitaryOption = document.getElementById('unit');
+    // disallow creation from circuit if it contains nothing, any measurement gates or has errors.
+    fromCircuitOption.disabled = circuit.gatesCounter === 0 || circuit.erroredGates > 0 || circuit.placedMeasurementGates > 0;
+
+    // if the circuit option is invalid, auto-toggle the unitary option
+    if (fromCircuitOption.disabled) fromUnitaryOption.checked = true;
+    // otherwise default to the circuit option
+    else fromCircuitOption.checked = true;
+
+    handleUnitaryMatrixImport();
+}
+
+/**
+ * Toggles the interactability of unitary creation widgets based
+ * on radio choice.
+ */
+export function handleUnitaryMatrixImport () {
+    Elements.gbImportButton.disabled = !Elements.unitaryRadio.checked;
+    Elements.unitaryTextarea.disabled = !Elements.unitaryRadio.checked;
+}
+
+/**
+ * Create the custom gate stamp/spawner based on the creation and
+ * description information given by the user through the gatebuilder,
+ * then add it to the toolbox and close the gatebuilder window.
+ * @param {*} definition (Optional) The imported gate definition object.
+ */
+export function createCustomGate (definition) {
+    // create new custom gate spawner.
+    const gate = Elements.templateCustomGate.cloneNode(true);
+    gate.id = `customGate-${createdGates++}`;
+    const gateSymbol = definition?.symbol || Elements.symbol.value || 'CG#' + createdGates;
+    gate.innerHTML = `<span>${gateSymbol}</span>`;
+    // this changes for custom gates, idk why.
+    gate.style.marginRight = '14px';
+
+    // if the given symbol string is too long, decrease its font size linearly down to a minimum.
+    if (gateSymbol.length > 2) 
+    gate.querySelector('span').style.fontSize = Math.max(7, -4 * gateSymbol.length + 30) + 'px';
+
+    // create gate context
+    const gateContext = document.createElement('gate-context');
+    gateContext.id = gate.id + 'Context';
+    if (definition) gateContext.innerHTML = definition.context;
+    else {
+        gateContext.innerHTML = `<b>${Elements.title.value || 'Custom Gate #' + createdGates}</b><br>`;
+        for (const line of Functions.explode(Elements.context.value, Math.max(Elements.title.value.length, 20) + 5)) 
+            gateContext.innerHTML += `<br>${line}`;
+    }
+
+    let flag = true;
+    // save the gate definition inside its object structure
+    if (definition) {
+        gate.definition = JSON.stringify(definition);
+        gate.qubitSpan = definition.length;
+    }
+    else if (document.getElementById('circ').checked) {
+        const snapshot   = circuit.makeTemplate();
+        snapshot.symbol  = gateSymbol;
+        snapshot.context = gateContext.innerHTML;
+        gate.definition  = JSON.stringify(snapshot);
+        gate.qubitSpan   = snapshot.length; 
+    }
+    else try {
+        const matrix = Elements.unitaryTextarea.value || Elements.unitaryTextarea.placeholder; 
+        // TODO: this doesnt work...
+        if (!Functions.isUnitary(matrix)) throw new Error();
+        else {
+            const trimmed   = matrix.replace(/\s/g, '');
+            gate.definition = trimmed;
+            // '],' instances in a JSON representation of a matrix appear one time less than the number of rows
+            // which is also the number of qubits this gate spans
+            const matches  = trimmed.match(/\],/);
+            gate.qubitSpan = matches ? matches.length + 1 : 0;
+        }
+    }
+    catch (error) {
+        flag = false;
+        closeGatebuilder();
+        Alerts.alertNonUnitary();
+    }
+
+    if (flag) {
+        // add context to body
+        document.body.appendChild(gateContext);
+        // add new gate to the toolbox, initialize and close
+        gate.style.display = 'inline-block';
+        Elements.customGatesList.appendChild(gate);
+        initializeGate(gate, true);
+        closeGatebuilder();
+    }
+}
+
+/**
+ * Remove leftover strings inside the inputboxes and hide the gatebuilder.
+ */
+export function closeGatebuilder () {
+    Elements.symbol.value = '';
+    Elements.title.value = '';
+    Elements.context.value = '';
+    Elements.unitaryTextarea.value = '';
+    gatebuilder.style.display = 'none';
+}
+
+/**
+ * Add the standard event listeners to the given gate.
+ * @param {*} gate The toolbox gate (HTML element).
+ * @param {boolean} isCustom (For custom gates) Whether the passed template is a user-defined gate.
+ */
+export function initializeGate (gate, isCustom) {
+    /**
+     * On clicking a gate positioned on the toolbox,
+     * spawn an exact copy and feed it drag and drop
+     * and fast delete behaviors.
+     */
+    gate.addEventListener('mousedown', (e) => {
+        // activate only on left click
+        if (e.button !== 0) return;
+        // create new gate based on specifications
+        const copy = new Gate(gate, isCustom ? gate.qubitSpan : 1);
+        // this is needed the first time to move the newly created gate appropriately. idk why
+        handleDragNdrop(copy);
+        // move copy to cursor
+        copy.move(e.clientX, e.clientY);
+    });
+
+    /**
+     * On hovering a gate on the toolbox, show correct
+     * context menu, positioned just above it.
+     * Vanish it again on mouseout.
+     */
+    gate.addEventListener('mouseover', () => {
+        const contextMenu = document.getElementById(gate.id + 'Context');
+        const gateRect = gate.getBoundingClientRect();
+        contextMenu.style.display = 'inline-block';
+        contextMenu.style.top = gateRect.bottom + 'px';
+        contextMenu.style.left = gateRect.left + 'px';
+    });
+    gate.addEventListener('mouseout', () => {
+        document.getElementById(gate.id + 'Context').style.display = 'none';
+    });
 }

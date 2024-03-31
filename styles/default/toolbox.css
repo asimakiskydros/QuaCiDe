@@ -9,12 +9,15 @@
          left-justified.
 */
 toolbox {
-    width: 11%;
+    width: 205px;
     height: 100%;
     background-color: lightgray;
     position: fixed;
+    display: flex;
     top: 0;
     left: 0;
+    z-index: 3;
+    flex-direction: column;
 }
 
 /* The toolbox title, also used as a delimiter. 
@@ -36,7 +39,8 @@ toolbox-title {
 hr {
     border: none;
     border-top: 1px solid #333;
-    margin: 15px;
+    width: 90%;
+    left: 5%;
 }
 
 /* Top subsection of toolbox, contains gates.
@@ -45,9 +49,11 @@ hr {
 */
 gate-list {
     position: relative;
-    height: 500px;
+    width: 100%;
+    flex: 1;
     display: block;
-    margin-bottom: 60px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Gate category container (e.g. Half-Turns).
@@ -91,6 +97,7 @@ gate {
     user-select: none;
     box-shadow: 1px 1px;
     vertical-align: top;
+    z-index: 4;
 }
 
 /* Context menu for the gates on the toolbox.
@@ -164,9 +171,9 @@ gate:hover {
 */
 gate span {
     position: absolute;
-    font-weight: bold;
     top: 50%;
     left: 50%;
+    font-weight: bold;
     transform: translate(-50%, -50%);
     font-size: 22px;
 }
@@ -198,12 +205,12 @@ gate img {
          on the top right of the gate, in the exponent position.
 */
 .textbox {
-    position: relative;
-    top: 10%;
-    left: 45.5%;
-    width: 20px; /* Adjust width as needed */
-    height: 15px; /* Adjust height as needed */
-    background-color: rgb(175, 236, 175); /* Set your desired background color */
+    position: absolute;
+    top: 7px;
+    right: 1px;
+    width: 20px;
+    height: 15px;
+    background-color: rgb(175, 236, 175);
     border: 1px solid black;
     box-sizing: border-box;
 }
@@ -214,9 +221,9 @@ gate img {
 */
 buttons-row {
     position: relative;
-    display: block;
-    margin-top: 5px;
-    left: 5%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5px;
 }
 
 /* Half-sized button.
@@ -234,7 +241,7 @@ buttons-row {
     border-radius: 5px;
     cursor: pointer;
     width: 88px;
-    transition: border 0.2s;
+    transition: 0.2s;
 }
 
 /* Summon border on hover to highlight
@@ -256,7 +263,7 @@ buttons-row {
     border-radius: 5px;
     cursor: pointer;
     width: 180px;
-    transition: border 0.2s;
+    transition: 0.2s;
 }
 
 /* Summon border on hover to highlight
@@ -266,12 +273,22 @@ buttons-row {
     border: 1px solid black;
 }
 
+/* Make buttons opaque and uninteractable
+   when disabled.
+*/
+buttons-row button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Small display of the designer version at the bottom of the toolbox.
    Desc: centered, dark gray text, marginalized from the top.
 */
 version-label {
-    text-align: center; 
     display: block;
-    margin-top: 5px;
+    text-align: center;
     color: #333;
+    position: relative;
+    bottom: 10px;
+    margin-top: 10px;
 }

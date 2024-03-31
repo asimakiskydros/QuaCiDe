@@ -1,23 +1,33 @@
 import * as Constants from './constants.js';
+import * as Elements  from './elements.js';
 import { Qubit } from './qubit.js';
 import { Gate } from './gate.js';
 import { toggleRunButton } from './functions.js';
 import { handleExponential } from './behaviors.js';
+import { initialSnapshot } from './main.js';
 
-// tools
-const canvas = document.querySelector('circuit-canvas');
-const identityGate = document.getElementById('identityGate');
-let undoStack = [], redoStack = [];
-
-// lookup tables
+// lookup lists
 const nongenericGates = ['identityGate', 'measurementGate'];
 const connectorTypes  = ['control-wire', 'swap-wire'];
 const poweredGates    = ['nthXGate', 'nthYGate', 'nthZGate'];
 
 class Circuit {
+    /**
+     * Handler for the qubit objects that make up the current circuit.
+     * @param {*} startingQubits The number of qubit objects to spawn initially.
+     */
     constructor(startingQubits) {
         this._qubits = [];
         this._columns = 0;
+        this._canvas = document.querySelector('circuit-canvas');
+        this._undoStack = [];
+        this._redoStack = [];  
+        this._title = 'circuit';      
+        this._createdGatesCounter = 0;
+        this._placedMeasurementGates = 0;
+        this._identitiesCounter = 0;
+        this._erroredGates = 0;
+        this._supportGates = 0;
 
         // initialize the circuit with as many starting qubits as requested
         for (let i = 0; i < startingQubits; i++) this.appendQubit();
@@ -26,6 +36,56 @@ class Circuit {
     get qubits () {
         return this._qubits;
     }
+    get gatesCounter () {
+        return this._createdGatesCounter;
+    }
+    get identitiesCounter () {
+        return this._identitiesCounter;
+    }
+    get erroredGates () {
+        return this._erroredGates;
+    }
+    get placedMeasurementGates () {
+        return this._placedMeasurementGates;
+    }
+    get supportGates () {
+        return this._supportGates;
+    }
+    get undoRedoStacks () {
+        return [this._undoStack, this._redoStack];
+    }
+    get title () {
+        return this._title;
+    }
+    get steps () {
+        return this._columns;
+    }
+    get canvas () {
+        return this._canvas;
+    }
+    // setters
+    set gatesCounter (count) {
+        this._createdGatesCounter = count;
+    }
+    set identitiesCounter (count) {
+        this._identitiesCounter = count;
+    }
+    set erroredGates (count) {
+        this._erroredGates = count;
+    }
+    set placedMeasurementGates (count) {
+        this._placedMeasurementGates = count;
+    }
+    set supportGates (count) {
+        this._supportGates = count;
+    }
+    set undoRedoStacks (stacks) {
+        this._undoStack = stacks[0];
+        this._redoStack = stacks[1];
+    }
+    set title (newTitle) {
+        this._title = newTitle;
+    }
     /**
      * Update the rightmostIndex flag to hold the length of the nose of the gate pyramid
      * in the register. This also acts as the position the next far-right-ly placed gate
@@ -33,6 +93,13 @@ class Circuit {
      */
     #updateColumns () {
         this._columns = Math.max(...this._qubits.map(qubit => qubit.weight));
+    }
+    resetCounters () {
+        this._createdGatesCounter = 0;
+        this._identitiesCounter = 0;
+        this._placedMeasurementGates = 0;
+        this._erroredGates = 0;
+        this._supportGates = 0;
     }
     /**
      * Update the stat trackers on the bottom right of the UI
@@ -43,7 +110,7 @@ class Circuit {
         qubitsCounter.textContent = 'Qubits: ' + this._qubits.length;
 
         const gatesCounter = document.getElementById('gatesCounter');
-        gatesCounter.textContent = 'Gates: ' + (Gate.gatesCounter - Gate.identitiesCounter);
+        gatesCounter.textContent = 'Gates: ' + (this._createdGatesCounter - this._identitiesCounter /*- this._supportGates*/);
 
         const stepsCounter = document.getElementById('stepsCounter');
         stepsCounter.textContent = 'Steps: ' + this._columns;
@@ -61,7 +128,7 @@ class Circuit {
         this._qubits.push(qubit);
 
         // push to canvas
-        canvas.appendChild(qubit.body);
+        this._canvas.appendChild(qubit.body);
 
         // update counters
         this.refreshStatCounters();
@@ -109,6 +176,10 @@ class Circuit {
         // build the new template
         this.buildFromTemplate(template);
     }
+    /**
+     * Remove the given qubit from the register.
+     * @param {*} qubit The reference to the qubit to be deleted.
+     */
     removeQubit (qubit) {
         const i = this.argfindQubit(qubit);
 
@@ -213,6 +284,7 @@ class Circuit {
         this.refreshStatCounters();
         this.checkForErrors();
         this.refreshBorders();
+        this.toggleButtons();
     }
     /**
      * Empties the entire register, deleting all gates and all extra qubits.
@@ -236,23 +308,34 @@ class Circuit {
 
         // if the relative position is way far on the right with respect to the rightmost gate already placed,
         // default to the nose of the gate pyramid.
-        if (pos > this._columns) {
+        if (pos > this._columns)
             // attach the gate and skip the rest
             qubit.attachGate(gate, this._columns, false);
-            return;
+        else {    
+            // if the given relative position is a float, this means the user attempted to
+            // 'squish' the given gate, demanding the creation of a new column.
+            if (!Number.isInteger(pos)) {
+                // place the gate on the next immediate integer index
+                pos = Math.ceil(pos);
+                // and shift all the qubits once to the right, starting from this position.
+                this._qubits.forEach(other => {other.attachGate(new Gate(Elements.identityGate), pos, false)});
+            }
+            // pre-calculate whether the position currently holds an invisible identity gate or an actual gate.
+            // if the first one, it is safe to paste over it, if not, shift-right the qubit.
+            const override = pos < qubit.weight && qubit.gates[pos].type === 'identityGate';   
+            qubit.attachGate(gate, pos, override);
         }
-        // if the given relative position is a float, this means the user attempted to
-        // 'squish' the given gate, demanding the creation of a new column.
-        if (!Number.isInteger(pos)) {
-            // place the gate on the next immediate integer index
-            pos = Math.ceil(pos);
-            // and shift all the qubits once to the right, starting from this position.
-            this._qubits.forEach(other => {other.attachGate(new Gate(identityGate), pos, false)});
+        const i_qubit = this.argfindQubit(qubit);
+        const step    = qubit.argfindGate(gate);
+        // create the template for the invisible supporting gates
+        // make them share ids so lookup is faster later
+        const supportGate = Elements.sameAsUp.cloneNode(true);
+        supportGate.id += gate.body.id;
+        // spawn as many new qubits as necessary to cover the gate's span (height).
+        for (let i = 1; i < gate.span; i++) {
+            while (i_qubit + i >= this._qubits.length) this.appendQubit();
+            this.attachGateToQubit(new Gate(supportGate), this._qubits[i_qubit + i], step);
         }
-        // pre-calculate whether the position currently holds an invisible identity gate or an actual gate.
-        // if the first one, it is safe to paste over it, if not, shift-right the qubit.
-        const override = pos < qubit.weight && qubit.gates[pos].type === 'identityGate';   
-        qubit.attachGate(gate, pos, override);
     }
     /**
      * Detaches the given gate from the qubit with the given id, if both of them are found and valid.
@@ -265,8 +348,17 @@ class Circuit {
         const ownerQubit = this.getQubit(id);
         if (!ownerQubit) return;
 
-        // if found, delete and check the relevant column for emptiness
-        ownerQubit.detachGate(gate);
+        // detach if found
+        const step = ownerQubit.detachGate(gate);
+
+        // remove leftover support gates if the detached gate spanned multiple qubits
+        if (gate.span > 1) 
+            for (const qubit of this._qubits)
+                if (step < qubit.weight && qubit.gates[step].type === '^' + gate.body.id) {
+                    const other = qubit.gates[step];
+                    qubit.detachGate(other);
+                    other.erase();
+                } 
     }
     /**
      * Scans the register for columns that contain control-ly gates and draws connector lines
@@ -277,8 +369,8 @@ class Circuit {
     connectControls (ignored) {
         this.#updateColumns();
         // discard previously drawn connectors
-        for (const line of document.querySelectorAll('.control-wire'))
-            canvas.removeChild(line);
+        for (const line of this._canvas.querySelectorAll('.control-wire'))
+            this._canvas.removeChild(line);
 
         // parse all existing columns and check if they contain at least one control-ly gate and at least one
         // non-special gate (speciality is subjective, i.e. identities shouldn't be connected with controls).
@@ -299,8 +391,8 @@ class Circuit {
     connectSwaps (ignored) {
         this.#updateColumns();
         // discard previously drawn swap lines
-        for (const line of document.querySelectorAll('.swap-wire'))
-            canvas.removeChild(line);
+        for (const line of this._canvas.querySelectorAll('.swap-wire'))
+            this._canvas.removeChild(line);
 
         // find the first couple of swap gates in a column and connect them
         for (let col = 0; col < this._columns; col++){
@@ -318,8 +410,8 @@ class Circuit {
     refreshBorders (ignored) {
         this.#updateColumns();
         // discard previously drawn borders
-        for (const border of document.querySelectorAll('.border-wire'))
-            canvas.removeChild(border);
+        for (const border of this._canvas.querySelectorAll('.border-wire'))
+            this._canvas.removeChild(border);
 
         // spawn new borders spanning the steps that contain postselections
         for (let col = 0; col < this._columns; col++) {
@@ -359,7 +451,7 @@ class Circuit {
     }
     /**
      * Tests the given column for control connectivity. A column has control connectivity if it has
-     *  at least one control-ly gate and at least one generic gate (subjective). 
+     *  at least one control-ly gate and at least one generic, non-support gate. 
      * @param {*} col The column to test.
      * @param {*} ignored (Optional) A gate that, if met, should not be taken into consideration.
      * @returns Flags for the connectivity tests and start/end indeces for the potential line.
@@ -372,7 +464,7 @@ class Circuit {
 
             // test each qubit of the column for the above
             const controlTest = this._qubits[i].gates[col].type === 'controlGate';
-            const genericTest = !nongenericGates.includes(this._qubits[i].gates[col].type);
+            const genericTest = !nongenericGates.includes(this._qubits[i].gates[col].type) && this._qubits[i].gates[col].type[0] !== '^';
             const bitState = this._qubits[i].isPositionBit(col);
 
             if (controlTest && bitState) hasClassicalControl = true;
@@ -404,7 +496,7 @@ class Circuit {
 
         controlWire.className = type;
         controlWire.id = type + col + start + end;
-        controlWire.style.left = (col + 1.82) * Constants.GATE_DELIMITER + 'px';
+        controlWire.style.left = (col + 1.97) * Constants.GATE_DELIMITER + 'px';
         controlWire.style.top = Constants.TOP_BOUNDARY + (1 + 2 * start) * Constants.WIRE_HALF_ORBIT + Constants.BLANK_SPACE + 'px';
         controlWire.style.height = (end - start) * 50 + 'px';
         if (connectorStyle === 2)
@@ -412,7 +504,7 @@ class Circuit {
         if (connectorStyle > 1)
             controlWire.style.border = '1px solid black';
 
-        canvas.appendChild(controlWire);
+        this._canvas.appendChild(controlWire);
     }
     /**
      * Draws a vertical border line through the entirety of step indexed 'col'.
@@ -423,7 +515,7 @@ class Circuit {
         const border = document.createElement('div');
         border.id = 'border-wire' + col;
         border.className = 'border-wire';
-        border.style.left = (col + 1.85) * Constants.GATE_DELIMITER + 'px';
+        border.style.left = (col + 1.99) * Constants.GATE_DELIMITER + 'px';
         border.style.top = Constants.TOP_BOUNDARY + 'px';
         border.style.height = this._qubits.length * 50 + 30 + 'px';
 
@@ -447,7 +539,7 @@ class Circuit {
         // add the reversed state as hint-text on highlight
         border.title = `Postselection after this step: |${[...state].reverse().join('')}〉`;
 
-        canvas.appendChild(border);
+        this._canvas.appendChild(border);
     }
     /**
      * Draws correct register rectangles around the kets of the existing qubits
@@ -455,14 +547,13 @@ class Circuit {
      * unified into one. Color shuffles in order by right-clicking the ket.
      */
     updateRegisterBorders() {
-        const body = document.querySelector('body');
         // remove all previous borders
         for (const regBorder of document.querySelectorAll('.register-border'))
-            body.removeChild(regBorder);
+            regBorder.remove();
 
         let currentColor = null, regBorder = null;
 
-        for (const qubit of this.qubits) {
+        for (const qubit of this._qubits) {
             // while the color among serial qubits doesnt change, increase length of reg
             if (qubit.registerColor === currentColor){
                 // '5/3' magic ratio to encapsulate the entirety of the next ket.
@@ -471,19 +562,20 @@ class Circuit {
             }
             // the color changed and the register holds at least one ket, draw to screen
             if (regBorder)
-                body.appendChild(regBorder);
+                this._canvas.appendChild(regBorder);
 
             // new color, initialize new register rectangle
             if (qubit.registerColor === '' || qubit.registerColor) {
                 regBorder = document.createElement('div');
                 regBorder.className = 'register-border';
-                // '10' magic number to align the top and left of the reg border 
+                // magic numbers to align the top and left of the reg border 
                 // to the top and left of the ket.
-                regBorder.style.top = qubit.state.getBoundingClientRect().top + 'px';
-                regBorder.style.left = qubit.state.getBoundingClientRect().left + 'px';
+                regBorder.style.top = qubit.state.getBoundingClientRect().top - 127 + 'px';
+                regBorder.style.left = qubit.state.getBoundingClientRect().left - 215 + 'px';
                 regBorder.style.height = qubit.state.clientHeight - 2 + 'px';
                 regBorder.style.width = qubit.state.clientWidth - 2 + 'px';
-                regBorder.style.border = qubit.registerColor ? `2px solid ${qubit.registerColor}` : '';
+                regBorder.style.border = qubit.registerColor ? '2px solid' : '';
+                regBorder.style.borderImage = qubit.registerColor ? `linear-gradient(to right, ${qubit.registerColor} 50%, transparent 50%) 1 1`: '';
                 currentColor = qubit.registerColor;
             }
             // unrecognized color, do nothing
@@ -493,7 +585,7 @@ class Circuit {
             }
         }
         // add any remaining reg rectangles
-        if (regBorder) body.appendChild(regBorder);
+        if (regBorder) this._canvas.appendChild(regBorder);
     }
     /**
      * Wipes the current circuit layout and builds a new one, as 
@@ -503,7 +595,7 @@ class Circuit {
     buildFromTemplate (template) {
         // wipe the existing circuit
         this.empty();
-        Gate.resetCounters();
+        this.resetCounters();
 
         // summon as many qubit wires as needed
         for (let i = 0; i < template.length - Constants.STARTING_QUBITS; i++) 
@@ -514,13 +606,13 @@ class Circuit {
             this._qubits[i].state.textContent = template[i].state;
             this._qubits[i].registerColor = template[i].color;
             
-            for (const gate of template[i].gates.reverse()) {
-                // for each qubit wire, attach each copy gate back-to-front.
-                // this is necessary because the copies spawn on the left side of the screen
-                // and thus attachGate knows to shift right to prepend the gate to the left.
-                const parts = gate.split('<!@DELIMITER>');
-                const copy = new Gate(document.getElementById(parts[0]));
-                this._qubits[i].attachGate(copy);
+            for (let step = 0; step < template[i].gates.length; step++) {
+                const parts = template[i].gates[step].split('<!@DELIMITER>');
+                if (parts[0][0] === '^') continue;
+
+                const gateElement = document.getElementById(parts[0]);
+                const copy = new Gate(gateElement, gateElement.qubitSpan || 1);
+                this.attachGateToQubit(copy, this._qubits[i], step);
 
                 // write the power of the gate in the input box if that applies
                 if (copy.powerBox && parts.length > 1) {
@@ -579,9 +671,9 @@ class Circuit {
      * Saves the current state into the redo stack before replacing.
      */
     loadPreviousSnapshot () {
-        const prev = undoStack.pop();
+        const prev = this._undoStack.pop();
         if (prev) {
-            redoStack.push(this.makeTemplate());
+            this._redoStack.push(this.makeTemplate());
             this.buildFromTemplate(prev);
         }
     }
@@ -591,21 +683,30 @@ class Circuit {
      * Saves the current state into the undo stack before replacing.
      */
     loadNextSnapshot () {
-        const next = redoStack.pop();
+        const next = this._redoStack.pop();
         if (next) {
-            undoStack.push(this.makeTemplate());
+            this._undoStack.push(this.makeTemplate());
             this.buildFromTemplate(next);
         }
     }
     /**
      * Saves the current circuit state into
      * the undo stack for later use.
+     * @param {*} snapshot (Optional) The snapshot to save. If not specified, the current one
+     *                     is saved.
      */
-    saveSnapshot () {
+    saveSnapshot (snapshot) {
         // if the undo stack is empty and a new action was taken,
         // flush the redo stack to remove garbage.
-        if (undoStack.length === 0) redoStack = [];
-        undoStack.push(this.makeTemplate());
+        if (this._undoStack.length === 0) this._redoStack = [];
+
+        const currentLayout = this.makeTemplate();
+        // if not given a snapshot, assume the caller wants to save the current state.
+        if (!snapshot)
+            this._undoStack.push(currentLayout);
+        // if the given snapshot is the same as the current layout, dont include it.
+        else if (JSON.stringify(snapshot) !== JSON.stringify(currentLayout))
+            this._undoStack.push(snapshot);
     }
     /**
      * Scans the circuit for errored gates and marks them.
@@ -613,7 +714,7 @@ class Circuit {
      * Currently, a gate is errored if:
      * 1. Its a swap gate that has no pair on its parent step.
      * 2. Its a swap with more than one other swap on its parent step.
-     * 3. Its a mixed-superposition gate (Hadamard, X^n, Y^n) placed on
+     * 3. Its a superposition gate (Hadamard, X^n, Y^n) placed on
      *    a bit.
      */
     checkForErrors () {
@@ -647,7 +748,15 @@ class Circuit {
                 gate.makeErrored(swaps.length > 2 ? 'Too many SWAPs on this step.': 'SWAPs need a pair on their step.');
         }
         // live-enable/disable runButton based on context
-        toggleRunButton();
+        toggleRunButton(this);
+    }
+    /**
+     * Make toolbox buttons uninteractable based on calculated stats.
+     */
+    toggleButtons () {
+        Elements.undoButton.disabled  = this._undoStack.length === 0;
+        Elements.redoButton.disabled  = this._redoStack.length === 0;
+        Elements.clearButton.disabled = JSON.stringify(this.makeTemplate()) === JSON.stringify(initialSnapshot);
     }
     static getNongenericGates () {
         return nongenericGates;

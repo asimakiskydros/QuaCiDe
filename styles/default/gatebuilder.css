@@ -1,0 +1,233 @@
+/*              GATEBUILDER
+    Everything concerning the custom gate builder window,
+    including the 'add gate' button.
+*/
+
+/* Include new gate button. Spawns the gatebuilder.
+   Desc: rounded rectangle, similar to a gate, 
+         holds a large black cross image, initially semi-opaque.
+*/
+.add-custom-gate {
+    width: 40px;
+    height: 40px;
+    display: inline-block;
+    margin-right: 10px;
+    margin-top: 10px;
+    margin-right: 12px;
+    background-color: transparent;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: top;
+    border: 2px solid black;
+    border-radius: 5px;
+    transition: 0.2s;
+    opacity: 0.6;
+    z-index: 4;
+}
+
+/* Make the image inside this button cover all the space.
+*/
+.add-custom-gate img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Revert to full opacity on hover.
+*/
+.add-custom-gate:hover {
+    opacity: 1;
+}
+
+/* Modal-like window for the creation of a new gate.
+   Desc: invisible container that centers the underlying subwindow 
+         and casts a shadow over the rest of the page when loaded.
+*/
+gatebuilder {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+/* Main gatebuilder window
+   Desc: curved rectangle, white background.
+*/
+gatebuilder-body {
+    position: relative;
+    background-color: white;
+    border-radius: 5px;
+    width: 500px;
+    height: 450px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+gatebuilder hr {
+    position: absolute;
+    left: 10px;
+    top: 30px;
+}
+
+/* Input widget titles.
+   Desc: bold black normal size letters, times new roman. 
+*/
+gatebuilder label {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 17px;
+    user-select: none;
+    position: relative;
+    font-weight: bold;
+}
+
+/* Left half of gatebuilder.
+   Desc: invisible container, holds the radio buttons list and the unitary
+         textarea, fading border from the bottom left corner and back.
+*/
+gatebuilder form {
+    position: absolute;
+    top: 50px;
+    left: 10px;
+    height: 86%;
+    width: 290px;
+    border-radius: 10px;
+    border: 1px solid;
+    border-image: linear-gradient(to right bottom, transparent 70%, black) 1;
+}
+
+/* Unitary matrix text area.
+   Desc: typical lightgreen background color, extends up to a maximum on
+         both dimensions, overflows in both of them too, marginalized.
+*/
+gatebuilder form textarea {
+    background-color: rgb(175, 236, 175);
+    border: 1px solid black;
+    margin-left: 30px;
+    margin-top: 10px;
+    max-height: 220px;
+    max-width: 220px;
+    overflow: auto;
+    font-family: 'Times New Roman', Times, serif;
+    width: 150px;
+    height: 150px;
+    transition: opacity 0.2s;
+}
+
+/* Import unitary matrix button
+   Desc: thinner copy of toolbox buttons.
+*/
+gatebuilder form .import {
+    background-color: rgb(165, 159, 159);
+    color: black;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 150px;
+    transition: border 0.2s;
+    height: 20px;
+    margin-left: 30px;
+    margin-top: 10px;
+    transition: 0.2s;
+}
+
+/* Show button's border on hover to highlight interactability.
+*/
+gatebuilder form .import:hover {
+    border: 1px solid black;
+}
+
+/* Make form widgets transparent and uninteractable when disabled.
+*/
+gatebuilder input[disabled],
+gatebuilder textarea[disabled],
+gatebuilder button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Right side of the gatebuilder.
+   Desc: Vertical curved rectangle,
+         lightgray background, marginalized,
+         covers the vast amount of the gatebuilder's height.
+*/
+gatebuilder description {
+    position: absolute;
+    background-color: lightgray;
+    border-radius: 5px;
+    height: 95.5%;
+    left: 315px;
+    right: 10px;
+    top: 10px;
+}
+
+/* Inputboxes for the symbols and titles.
+   Desc: typical lightgreen background, black letters, times new roman
+         marginalized.
+*/
+gatebuilder description input {
+    background-color: rgb(175, 236, 175);
+    border: 1px solid black;
+    position: relative;
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 85%;
+    height: 20px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+/* Description text area.
+   Desc: similar to form textarea, extends and overflows only vertically.
+*/
+gatebuilder description textarea {
+    background-color: rgb(175, 236, 175);
+    border: 1px solid black;
+    margin-left: 10px;
+    margin-right: 10px;
+    resize: vertical;
+    width: 85%;
+    max-height: 150px;
+    font-family: 'Times New Roman', Times, serif;
+    overflow-y: auto;
+}
+
+/* Create and close buttons container.
+   Desc: invisible, centering, marginalized.
+*/
+gatebuilder buttons-col {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    bottom: 10px;
+    width: 89%;
+    left: 10px;
+}
+
+/* Create and close buttons.
+   Desc: sized down versions of the toolbox buttons.
+*/
+gatebuilder .big-button {
+    background-color: rgb(165, 159, 159);
+    color: black;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    height: 40px;
+    transition: border 0.2s;
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* Show border on button hover to highlight interactability.
+*/
+gatebuilder .big-button:hover {
+    border: 1px solid black;
+}

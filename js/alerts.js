@@ -13,3 +13,6 @@ export function alertNaNinPoweredGate () {
 export function alertErrorsOnCircuit () {
     alert('Execution thwarted; your circuit contains errored gates.');
 }
+export function alertNonUnitary () {
+    alert('Creation failed; the given input was not a unitary matrix.');
+}

@@ -8,30 +8,44 @@
         <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
     </head>
     <body>
-        <main-title><span>Qua</span>ntum <span>Ci</span>rcuit <span>De</span>signer</main-title>
+        <main-title>
+            <span>Qua</span>ntum <span>Ci</span>rcuit <span>De</span>signer<span></span>
+        </main-title>
 
-        <circuit-canvas>
-            <!-- Global qubit template -->
-            <qubit id="templateQubit" style="display: none;">
-                <qubit-widgets>
-                    <button class="qubit-option" title="Add new qubit above">+</button>
-                    <button class="qubit-option" title="Delete qubit">x</button>
-                </qubit-widgets>
-                <qubit-state>|0〉</qubit-state>
-                <qubit-wire></qubit-wire>
-            </qubit>
-        </circuit-canvas>
+        <!-- Global qubit template -->
+        <qubit id="templateQubit" style="display: none;">
+            <qubit-widgets>
+                <button class="qubit-option" title="Add new qubit above">+</button>
+                <button class="qubit-option red-hover" title="Delete qubit">x</button>
+            </qubit-widgets>
+            <qubit-state>|0〉</qubit-state>
+            <qubit-wire></qubit-wire>
+        </qubit>
+
+        <!-- Tab links container -->
+        <tabs>
+            <!-- Global tab link template -->
+            <tab-link id="templateTabLink" style="display: none;">
+                <input placeholder="Circuit 1"></input>
+                <button class="delete-tab">&times;</button>
+            </tab-link>
+            <button class="include-tab" id="includeTabButton">+</button>
+        </tabs>
+
+        <!-- Tab content container -->
+        <tab-content id="tabsContents">
+            <circuit-canvas></circuit-canvas>
+        </tab-content>
 
         <!-- The gray bar at the bottom of the screen hosting stats etc -->
         <toolbar>
-            <dummy></dummy>
-            <delimiter></delimiter>
+            <vr></vr>
             <counter id="qubitsCounter">Qubits: </counter>
-            <delimiter></delimiter>
+            <vr></vr>
             <counter id="gatesCounter">Gates:   </counter>
-            <delimiter></delimiter>
+            <vr></vr>
             <counter id="stepsCounter">Steps:   </counter>
-            <delimiter></delimiter>
+            <vr></vr>
         </toolbar>
 
         <toolbox>
@@ -40,7 +54,7 @@
 
             <!-- Gates container -->
             <gate-list>
-                <!-- Probes -->
+                <!-- Manipulation tools -->
                 <label>Probes</label>
                 <section id="probesList">
                         <!-- MEASUREMENT GATE -->
@@ -51,7 +65,7 @@
                     <gate id="swapGate"><img src="icons/swap.png" alt="SW" draggable="false"></gate> 
                 </section>
 
-                <!-- Half-Turns -->
+                <!-- Standard turns around the Bloch sphere -->
                 <label>Turns</label>
                 <section id="turnsList">
                     <!-- PAULI X-->
@@ -70,6 +84,7 @@
                     <gate id="identityGate" style="display: none;"><span>I</span></gate> 
                 </section>
 
+                <!-- Gates that accept input e.g. angles -->
                 <label>Parameterized</label>
                 <section id="parameterizedList">
                     <!-- Nth POWER OF X -->
@@ -94,10 +109,23 @@
                         <input class="textbox" style="font-size: 8px; pointer-events: none;"></input>
                     </gate>
                 </section>
+
+                <!-- User-defined gates -->
+                <label>Custom</label>
+                <section id="customsList">
+                    <!-- ADD NEW GATE BUTTON -->
+                    <button class="add-custom-gate" id="addGate">
+                        <img src="icons/custom.png" alt="Cu" draggable="false">
+                    </button>         
+                    <!-- CUSTOM GATE TEMPLATE -->
+                    <gate id="templateCustomGate" style="display: none;"><span>CG</span></gate> 
+                    <!-- Dummy support "gate" for when a real gate spans multiple qubits -->
+                    <gate id="^" style="display: none;"></gate>
+                </section>
             </gate-list>
 
             <!-- Run button(s) container -->
-            <hr>
+            <hr style="margin-top: 20px; margin-bottom: 20px;">
             <run-button-list>
                 <!-- Run button -->
                 <button class="run-button" id="runButton" title="Prepare the circuit for execution (CTRL + X)">
@@ -106,14 +134,14 @@
             </run-button-list>
             
             <!-- Help buttons -->
-            <hr>
-            <buttons-row style="margin-top: 30px;">
+            <hr style="margin-top: 20px; margin-bottom: 20px;">
+            <buttons-row>
                 <!-- Undo button -->
                 <button class="small-button" id="undoButton" title="Undo the previous action (CTRL + Z)">
                     Undo
                 </button> 
                 <!-- Redo button -->
-                <button class="small-button" id="redoButton" title="Redo the last undone action (CTRL + SHIFT + Z)">
+                <button class="small-button" id="redoButton" title="Redo the last undone action (CTRL + SHIFT + Z)" style="margin-left: 4px;">
                     Redo
                 </button> 
             </buttons-row>
@@ -132,12 +160,12 @@
                     Import
                 </button> 
                 <!-- Export button -->
-                <button class="small-button" id="exportButton" title="Export to JSON (CTRL + S)">
+                <button class="small-button" id="exportButton" title="Export to JSON (CTRL + S)" style="margin-left: 4px;">
                     Export
                 </button> 
             </buttons-row>
 
-            <version-label>v0.1</version-label>
+            <version-label>v0.3.5</version-label>
         </toolbox>
 
         <!-- 'Run Button' modal divs-->
@@ -182,6 +210,7 @@
                     <br>
                     <label style="margin-left: 10px;">Options</label>
                     <hr>
+                    <br>
 
                     <!-- Counts option -->
                     <label>
@@ -237,6 +266,46 @@
                 </modal-toolbox>
             </modal-body>
         </modal>
+
+        <!-- 'Add gate' window divs -->
+        <gatebuilder style="display: none;">
+            <gatebuilder-body>
+                <label style="top: 10px; left: 10px;">Gate builder</label>
+                <hr style="width: 250px;">
+
+                <!-- Left side - source of gate -->
+                <form name="creationForm">
+                    <br>
+                    <input type="radio" id="circ" name="source" style="accent-color: green;">
+                    <label for="circ">From current circuit</label>
+                    <br><br>
+                    <input type="radio" id="unit" name="source" style="accent-color: green;">
+                    <label for="unit">From unitary matrix</label>
+                    <br>
+                    <button type="button" class="import" id="importUnitaryInGB">Import from JSON...</button><br>
+                    <textarea placeholder="[[1, 0], [0, 1]]" id="unitaryTextarea"></textarea>
+                </form>
+
+                <!-- Right side - description of gate -->
+                <description>
+                    <label for="symbol" style="left: 10px; top: 5px;">Symbol: </label><br>
+                    <input type="text" style="top: 5px;" id="symbol">
+                    <br><br>
+                    <label for="title" style="left: 10px;">Title: </label><br>
+                    <input type="text" id="title">
+                    <br><br>
+                    <label for="context" style="left: 10px;">Description: </label><br>
+                    <textarea id="context"></textarea>
+                    <br>
+                    <buttons-col>
+                        <button class="big-button" id="createGateButton">Create gate</button>
+                        <button class="big-button" id="closeGatebuilder">Close</button>
+                    </buttons-col>
+                </description>
+            </gatebuilder-body>
+        </gatebuilder>
+
+
         <!-- Context menus for the gates on the toolbox -->
         <gate-context id="measurementGateContext">
             <b>Measurement</b>
@@ -390,6 +459,17 @@
                         <math><msup><mi>e</mi><mrow><mi>j</mi><mfrac><mi>π</mi>4</mfrac></mrow></msup></math>
                     </td>
                 </tr>
+            </table>
+        </gate-context>
+        <gate-context id="identityGateContext">
+            <b>Inertia Gate</b>
+            <br>
+            <br>The identity gate.
+            <br>Leaves the state as is.
+            <br>As matrix:
+            <table class="matrix">
+                <tr><td>1</td><td>&nbsp;&nbsp;</td><td>0</td></tr>
+                <tr><td>0</td><td>&nbsp;&nbsp;</td><td>1</td></tr>
             </table>
         </gate-context>
         <!-- Load Math.js -->

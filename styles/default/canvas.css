@@ -3,61 +3,15 @@
     webpage where the qubits and the title are.
 */
 
-/* The rectangle at the bottom right corner
-   displaying relevant stats.
-   Desc: A thin, gray rectangle about a fifth
-         of the screen, at the global bottom right.
+/* The center-stage for the qubits to spawn.
+   Desc: invisible, encompassing the area
+         between the title and the counters.
 */
-toolbar {
+circuit-canvas {
     position: relative;
     display: block;
-    background-color: gray;
-    height: 2.5vh;
-    left: 1%;
-}
-
-/* A simple stat-tracker.
-   Desc: invisible background, small
-         black letters, a quarter of
-         the parent container.
-*/
-counter {
-    position: relative;
-    height: 90%;
-    width: 140px;
-    display: inline-block;
-    border-radius: 5px;
-    margin-left: 5px;
-    cursor: default;
-    vertical-align: 46%;
-}
-
-/* Emphasize the counter on hover
-   by temporarily turning the background to dark gray.
-*/
-counter:hover {
-    background-color: lightgray;
-}
-
-/* Dummy div to push the counters to the right.
-   Desc: invisible.
-*/
-toolbar dummy {
-    position: relative;
-    height: 100%;
-    width: 10px;
-    display: inline-block;
-    margin-right: 1350px;
-}
-
-toolbar delimiter {
-    position: relative;
-    height: 70%;
-    width: 1px;
-    display: inline-block;
-    background-color: black;
-    margin-top: 3px;
-    margin-bottom: 3px;
+    flex: 1;
+    margin-top: 6px;
 }
 
 /*  Single-qubit container.
@@ -67,22 +21,22 @@ toolbar delimiter {
 */
 qubit {
     position: relative;
+    display: flex;
     right: 0;
-    width: 100%;
     height: 50px;
     margin-left: 5px;
+    align-items: center;
 }
 
 /* The wire on which gates can be positioned.
-   Desc: long, thin, about 90% of the width of the
-         parent container, right-justified.
+   Desc: long, thin, extends indefinitely to the right, right-justified.
 */
 qubit-wire {
     position: absolute;
     height: 1px;
     top: 50%;
     right: 0;
-    left: 3%;
+    left: 60px;
     border-width: 1px;
     border-style: solid;
     border-color: white;
@@ -97,7 +51,6 @@ qubit-state {
     position: relative;
     height: 30px;
     width: 30px;
-    top: 20%;
     color: black;
     cursor: pointer;
     background-color: white;
@@ -121,6 +74,10 @@ qubit-state:hover {
     background-color: rgb(175, 236, 175);
 }
 
+/* Wrapper div for the prepend-close qubit options
+   Desc: Leftmost inside the qubit object, vertical
+         rectangle.
+*/
 qubit-widgets {
     position: relative;
     height: 40px;
@@ -129,22 +86,42 @@ qubit-widgets {
     display: inline-block;
 }
 
+/* Button option for the parent qubit.
+   Desc: small rounded square, centered text
+         visible only on hover.
+*/
 .qubit-option {
     position: relative;
-    display: block;
-    height: 15px;
-    width: 15px;
-    text-align: center;
+    display: none;
+    height: 13px;
+    width: 13px;
     cursor: pointer;
     background-color: white;
     font-size: x-small;
     border: none;
     transition: background-color 0.2s;
-    text-align: center;
+    justify-content: center;
+    align-items: end;
+    border-radius: 5px;
 }
 
+/* Show options only on qubit hover to not clutter the screen.
+*/
+qubit:hover .qubit-option {
+    display: flex;
+}
+
+/* Default background color option is the usual lightgreen.
+*/
 .qubit-option:hover {
     background-color: rgb(175, 236, 175);
+}
+
+/* For important/dangerous options, switch to red (eg
+   when deleting the qubit).
+*/
+.red-hover:hover {
+    background-color: rgb(238, 94, 94);
 }
 
 /* The border of the ket, alternates in colors.
@@ -155,6 +132,7 @@ qubit-widgets {
     position: absolute;
     border: none;
     pointer-events: none;
+    z-index: 1;
 }
 
 /* Connector for control gates.

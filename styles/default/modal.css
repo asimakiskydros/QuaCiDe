@@ -11,8 +11,6 @@ run-button-list {
     position: relative;
     display: grid;
     place-items: center;
-    margin-top: 30px;
-    margin-bottom: 30px;
 }
 
 /* Run Circuit button, summons modal.
@@ -93,10 +91,11 @@ modal extra-parameter {
    Desc: centered, marginalized from the top.
 */
 modal buttons-col {
-    position: relative;
+    position: absolute;
     display: grid;
     place-items: center;
-    margin-top: 115px;
+    bottom: 10px;
+    left: 10px;
 }
 
 /* Modal toolbox buttons.
@@ -116,6 +115,7 @@ modal buttons-col {
     transition: border 0.2s;
     display: block;
     margin-top: 10px;
+    transition: 0.2s;
 }
 
 /* Summon border on hover to highlight interactability.
@@ -136,12 +136,11 @@ modal buttons-col {
          of the length of the modal, curved edges.
 */
 modal-toolbox {
-    margin: 10px;
     position: absolute;
     width: 200px;
     height: 96%;
-    top: 0;
-    right: 0;
+    top: 10px;
+    left: 490px;
     background-color: lightgray;
     border-radius: 5px;
 }
@@ -162,6 +161,7 @@ modal-toolbox {
     font-family: 'Times New Roman', Times, serif;
     font-size: 15px;
     cursor: pointer;
+    transition: 0.2s;
 }
 
 /* Make listbox opaque and uninteractable when disabled.
@@ -208,6 +208,7 @@ modal-toolbox {
     background-color: rgb(165, 159, 159);
     font-size: 15px;
     font-family: 'Times New Roman', Times, serif;
+    transition: 0.2s;
 }
 
 /* Make the textbox opaque and uninteractable when disabled.
@@ -277,7 +278,7 @@ modal display output-screen {
     height: 380px;
     top: 0;
     left: 0;
-    background-color: rgb(204, 230, 204);
+    background-color: rgb(175, 236, 175);
     border: 1px solid black;
     display: flex;
     justify-content: center;
@@ -341,6 +342,9 @@ modal help-note {
     text-align: center;
 }
 
+/* Wrapper div for the loading animation + label combo
+   Desc: centered
+*/
 loading-texture {
     text-align: center;
 }

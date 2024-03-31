@@ -1,9 +1,8 @@
 import * as Constants from './constants.js';
-import { Gate } from './gate.js';
-import { circuit } from './main.js'; 
+import * as Elements  from './elements.js';
+import { Gate }       from './gate.js';
+import { circuit }    from './main.js';
 
-const templateQubit = document.getElementById('templateQubit');
-const identityGate = document.getElementById('identityGate');
 const borderColors = ['', 'black', 'purple', 'red', 'orange', 'green'];
 const defaultStates = ['|0〉', '|1〉', '|+〉', '|-〉', '|+j〉', '|-j〉'];
 
@@ -17,38 +16,31 @@ class Qubit {
         this._gates = [];
         this._bitPositions = '';
         this._registerColor = '';
-        this._body = templateQubit.cloneNode(true);
+        this._body = Elements.templateQubit.cloneNode(true);
         this._body.id = 'qubit' + id;
         this._body.style.top = topPixels + 'px';
         this._body.style.display = 'flex';
         this._wire = this._body.querySelector('qubit-wire');
         this._state = this._body.querySelector('qubit-state');
 
-        // add state shuffling functionality when clicking state
         this._state.addEventListener('click', (e) => {
-            if (e.ctrlKey) return;
-
-            // save current state
             circuit.saveSnapshot();
 
-            if (e.shiftKey) {
-                this._state.textContent = defaultStates[0];
+            // add state shuffling when clicking state
+            if (!e.ctrlKey) {
+                if (e.shiftKey)
+                    // shift reverts to default
+                    this._state.textContent = defaultStates[0];
+                else {
+                    const argstate = defaultStates.indexOf(this._state.textContent);
+                    this._state.textContent = `${defaultStates[(argstate + 1) % defaultStates.length]}`;
+                }
                 return;
             }
 
-            const state = this._state.textContent;
-            const argstate = defaultStates.indexOf(state);
-            this._state.textContent = `${defaultStates[(argstate + 1) % defaultStates.length]}`;
-        });
-
-        // add ket coloring shuffling functionality when control-clicking state
-        this._state.addEventListener('click', (e) => {
-            if (!e.ctrlKey) return;
-
-            // save current state
-            circuit.saveSnapshot();
-
+            // add ket coloring when control-clicking state
             if (e.shiftKey)
+                // shift reverts to default
                 this._registerColor = borderColors[0];
             else {
                 const argcolor = borderColors.indexOf(this._registerColor);
@@ -57,6 +49,8 @@ class Qubit {
             circuit.updateRegisterBorders();
         });
 
+        // qubit option '+' adds a new qubit immediately above
+        // qubit option 'x' deletes the parent qubit and all its gates
         for (const option of this._body.querySelectorAll('.qubit-option'))
             switch (option.textContent) {
                 case '+':
@@ -96,6 +90,9 @@ class Qubit {
     get bitPositions () {
         return this._bitPositions;
     }
+    static get defaultStates () {
+        return defaultStates;
+    }
     // setters
     set registerColor (color) {
         this._registerColor = color;
@@ -106,10 +103,12 @@ class Qubit {
      * @param {*} position The wire's position (index-like).
      */
     snapOnWirePosition (gate, position) {
-        const wireRect = this._wire.getBoundingClientRect();
+        // when hovering a qubit, append it inside its body, albeit temporarily,
+        // to ensure correct positional alignment.
+        if (!this._body.contains(gate.body)) this._body.appendChild(gate.body);
 
-        gate.body.style.top  = wireRect.top - Constants.SNAP_DISTANCE + 1 + 'px';
-        gate.body.style.left = wireRect.left + Constants.GATE_DELIMITER / 4 + position * Constants.GATE_DELIMITER + 'px';
+        gate.body.style.top = '-4px';
+        gate.body.style.left = (position + 1.5) * Constants.GATE_DELIMITER + 'px';
     }
     /**
      * Determine whether this qubit wire is currently being hovered by the cursor.
@@ -209,7 +208,7 @@ class Qubit {
         // transfer ownership to this qubit
         gate.owner = this._body.id;
         // pad the qubit with as many identities as necessary to reach the desired position
-        if (!override) while (pos > this.weight) this._gates.splice(pos, 0, new Gate(identityGate));
+        if (!override) while (pos > this.weight) this._gates.splice(pos, 0, new Gate(Elements.identityGate));
         // add gate to array at index pos
         this._gates.splice(pos, override ? 1 : 0, gate);
         // reorganize gate train so each gate appears on its corresponding index position
@@ -230,7 +229,7 @@ class Qubit {
                 // if this turns out to be unnecessary, it will be collected by 
                 // the minimizer
                 this._gates.splice(pos, 1);
-                if (gate.type !== 'identityGate') this._gates.splice(pos, 0, new Gate(identityGate));
+                if (gate.type !== 'identityGate') this._gates.splice(pos, 0, new Gate(Elements.identityGate));
                 // reorganize the gate train
                 this.reorder(0);
                 return pos;
@@ -245,9 +244,6 @@ class Qubit {
 
         this._gates = [];
         this.scanForMeasurement();
-    }
-    static getDefaultStates () {
-        return defaultStates;
     }
 }
 

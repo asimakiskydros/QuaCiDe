@@ -1,22 +1,22 @@
 import * as Constants from './constants.js';
-import { Gate } from './gate.js';
+import { circuit } from './main.js';
+import { Qubit } from './qubit.js';
 
 const tealgrnColorscale = [
     [   0,   'rgb(0, 128, 128)'],
     [ 0.5, 'rgb(102, 204, 204)'],
     [   1,         'lightgreen']
-]
+];
 
 /**
-     * Find the qubit currently hovered (if any) and indexize the left-coordinate of the mouse
-     * with respect to that qubit.
-     * @param {*} event The mouse event that triggered this behavior.
-     * @param {*} hoveredGate The gate currently dragged by the cursor.
-     * @param {*} circuit The current circuit description.
-     * @returns A tuple of the cursor's relative position on the hovered qubit and the qubit in question.
-     *          If none was found, returns [undefined, undefined].
-     */
-export function localize (event, hoveredGate, circuit) {
+ * Find the qubit currently hovered (if any) and indexize the left-coordinate of the mouse
+ * with respect to that qubit.
+ * @param {*} event The mouse event that triggered this behavior.
+ * @param {*} hoveredGate The gate currently dragged by the cursor.
+ * @returns A tuple of the cursor's relative position on the hovered qubit and the qubit in question.
+ *          If none was found, returns [undefined, undefined].
+ */
+export function localize (event, hoveredGate) {
     // fetch the hovered qubit
     const hoveredQubit = circuit.findHoveredQubit(event);
     // if found, calculate the cursor's offset from its wire's start
@@ -35,10 +35,11 @@ export function localize (event, hoveredGate, circuit) {
     const index = Math.floor(offset / Constants.GATE_DELIMITER);
     const mean = 0.5 * (index * Constants.GATE_DELIMITER + (index + 1) * Constants.GATE_DELIMITER);
     // if the cursor falls below the mean that defines the range of the integer position, OR
-    // the gate is hovering above an identity or itself, fall back to the previous half.
-    const relativePosition = offset < mean                                     || 
-                            (index < hoveredQubit.weight                       &&
-                             hoveredQubit.gates[index].type !== 'identityGate' &&
+    // the gate is hovering above an identity, itself, or a child supporting gate, fall back to the previous half.
+    const relativePosition = offset < mean                                              || 
+                            (index < hoveredQubit.weight                                &&
+                             hoveredQubit.gates[index].type !== 'identityGate'          &&
+                             !hoveredQubit.gates[index].type.includes(hoveredGate.type) &&
                              hoveredQubit.gates[index] !== hoveredGate)         ? index - 0.5 : index;
 
     return [relativePosition, hoveredQubit];
@@ -129,16 +130,17 @@ export function createPlotCanvas (id, height, width) {
  * @param {*} message The error message to show.
  */
 export function assert (condition, message) { 
-    if (!condition) throw 'Assertion promise breached' (message ? ':' + message : '');
+    if (!condition) throw new Error(`Assertion promise breached${message ? ': ' + message : '.'}`);
 }
 
 /**
  * Enable/Disable the run button based on whether 
  * errored gates currently exist on the circuit.
+ * @param circuit The circuit to run (typically the currently shown).
  */
 export function toggleRunButton () {
     const runButton = document.getElementById('runButton');
-    if (Gate.erroredGates > 0) {
+    if (circuit.erroredGates > 0) {
         runButton.disabled = true;
         runButton.title = 'The circuit contains errored gates!';
     }
@@ -279,4 +281,92 @@ export function createUnitaryPlot(container, results) {
     });
 
     return canvas;
+}
+
+/**
+ * Explode a string into chunks of whole words at most the given size.
+ * @param {*} string The entire word sequence.
+ * @param {*} size The maximum size of each line/chunk.
+ * @returns A list containing all the lines/chunks.
+ */
+export function explode (string, size) {
+    const words = string.split(' ');
+    const lines = [];
+    let line = '';
+
+    for (const word of words) {
+        // if the next word would make the line exceed the limit,
+        // push the current line and initialize a new one
+        if ((line + word).length > size) {
+            lines.push(line.trim());
+            line = '';
+        }
+        // add word to line
+        line += word + ' ';
+    }
+    // push any remaining lines
+    if (line.trim().length > 0) lines.push(line.trim());
+
+    return lines;
+}
+
+/**
+ * Calculate whether the given string represents
+ * a unitary matrix (approximately).
+ * @param {string} stringifiedMatrix The string representation of the matrix.
+ * @param {number} tolerance The floating point error tolerance.
+ * @returns True if the represented matrix is unitary under the given tolerance.
+ */
+export function isUnitary (stringifiedMatrix, tolerance = 1e-10) {
+    const matrix = math.matrix(
+        stringifiedMatrix
+            .replace(/\s/g, '')
+            .replaceAll('j', 'i')
+            .replace('[[', '')
+            .replace(']]', '')
+            .split('],[')
+            .map(row => row.split(',').map(num => num.includes('i') ? math.complex(num) : Number.parseFloat(num)))
+    );
+
+    if (matrix.size[0] === 0 || matrix.size[0] !== matrix.size[1])
+        return false;
+
+    const dagger = math.transpose(matrix.map((value, index, matrix) => value instanceof math.Complex ? value.conjugate() : value));
+    
+    const product = math.multiply(matrix, dagger).valueOf();
+
+    return product.every((row, i) => row.every((value, j) =>
+        Math.abs(value - (i === j ? 1 : 0)) < tolerance
+    ));
+}
+
+/**
+ * TODO: Primitive. Needs rework.
+ * 
+ * Validates the parsed object to be a quacide circuit. 
+ * Every existing nested object must follow the stringified qubit format, containing gate matrices,
+ * correct gate definitions, states, register colors etc.
+ * 
+ * If anything unusual gets detected, a relevant error is thrown and the validation exits early as failed.
+ * @param {*} obj The object to be tested.
+ */
+export function validateObject (obj) {
+    assert(obj !== null && typeof obj === 'object', 'Unrecognized input file format.');
+    
+    for (const qubit of Object.values(obj)) {
+        if (typeof qubit !== 'object') continue;  // skip the non qubit values
+
+        assert(Qubit.defaultStates.includes(qubit.state), 'Unrecognized qubit state inside input file.');
+        assert(Array.isArray(qubit.gates), 'Unrecognized gate format');
+
+        for (const listing of qubit.gates) {
+            // try to summon the div with id the listing string. If the listing is correct,
+            // there will exist one element that bears such an id (the gates in the toolbox).
+            let stamp = listing.split('<!@DELIMITER>')[0];
+                stamp = stamp.split('.')[0];
+                stamp = stamp.replace('^', '');
+
+            assert(document.getElementById(stamp), 'Invalid gate inside input file.');
+        }
+    }
 }

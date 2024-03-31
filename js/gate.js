@@ -1,11 +1,6 @@
 import * as Behaviors from './behaviors.js';
 import { circuit } from './main.js';
 
-let createdGatesCounter = 0;
-let placedMeasurementGates = 0;
-let identitiesCounter = 0;
-let erroredGates = 0;
-
 const iconsDir            = 'icons';
 const measurementTextures = ['measurement.png', 'post-select-0.png', 'post-select-1.png'];
 const measurementLabels   = ['M', 'PS-0', 'PS-1'];
@@ -15,14 +10,18 @@ const controlLabels       = ['C', 'AC'];
 class Gate {
     /**
      * Summon a new gate by copying the given static template.
-     * @param {*} other the static HTMLElement clicked in the toolbox.
+     * @param {*} other The static HTMLElement clicked in the toolbox.
+     * @param {number} qubitSpan (Optional) How many qubits this gate spans.
      */
-    constructor (other) {
+    constructor (other, qubitSpan = 1) {
+        this._span = qubitSpan;
         this._body = other.cloneNode(true);
+
         // copy style customization
-        this._body.id = 'copyof-' + other.id + '-' + createdGatesCounter++;
+        this._body.id = `${other.id}.${circuit.gatesCounter++}`;
         this._body.style.position = 'absolute';
         this._body.style.boxShadow = 'none';
+        this._body.style.height = this._span * 40 + (this._span - 1) * 10 + 'px';
 
         // summon texture
         document.body.appendChild(this._body);
@@ -41,12 +40,13 @@ class Gate {
 
         // if this is an identity gate, dont project it at all
         if (this._type === 'identityGate') { 
-            this._body.style.display = 'none';
-            identitiesCounter++; 
+            //this._body.style.display = 'none';
+            circuit.identitiesCounter++; 
         }
         // if this is a measurement gate, inform counter
-        if (this._type === 'measurementGate') placedMeasurementGates++;
-
+        if (this._type === 'measurementGate') circuit.placedMeasurementGates++;
+        // if this is a support gate, inform counter
+        if (this._type[0] === '^') circuit.supportGates++;
         // make errored on invalid exponential
         if (this._powerBox)
             this._powerBox.addEventListener('input', () => { Behaviors.handleExponential(this, this._powerBox.value); });
@@ -104,17 +104,8 @@ class Gate {
     get display () {
         return this._display;
     }
-    static get placedMeasurementGates () {
-        return placedMeasurementGates;
-    }
-    static get identitiesCounter () {
-        return identitiesCounter;
-    }
-    static get gatesCounter () {
-        return createdGatesCounter;
-    }
-    static get erroredGates () {
-        return erroredGates;
+    get span () {
+        return this._span;
     }
     static get measurementTextures () {
         return measurementTextures;
@@ -161,6 +152,11 @@ class Gate {
      * @param {*} amountY Top position in pixels.
      */
     move (amountX, amountY) {
+        // a gate moves plain if it does not hover a qubit.
+        // if it currently belongs inside anything other than the main body,
+        // then it was just picked up from a qubit. Return it to the main body.
+        if (this._body.parentElement !== document.body) document.body.appendChild(this._body);
+
         this.moveLeft(amountX)
         this.moveUp(amountY)
     }
@@ -169,10 +165,11 @@ class Gate {
      * If it was a measurement gate, inform the global counter.
      */
     erase () {
-        if (this._type === 'measurementGate') placedMeasurementGates--;
-        if (this._type === 'identityGate') identitiesCounter--;
-        if (this._errored) erroredGates--;
-        createdGatesCounter--;
+        if (this._type === 'measurementGate') circuit.placedMeasurementGates--;
+        if (this._type === 'identityGate') circuit.identitiesCounter--;
+        if (this._errored) circuit.erroredGates--;
+        if (this._type[0] === '^') circuit.supportGates--;
+        circuit.gatesCounter--;
         this._body.remove();
     }
     /**
@@ -208,7 +205,7 @@ class Gate {
         this._errored = true;
         this._body.style.backgroundColor = 'white';
         this._body.style.border = '1px solid red';
-        erroredGates++;
+        circuit.erroredGates++;
     }
     /**
      * Tag this gate as not errored and return its gate to normal.
@@ -221,13 +218,7 @@ class Gate {
         this._body.title = '';
         // re-instate the correct border-background combo
         if (!this.banishBorder()) this.summonBorder();
-        erroredGates--;
-    }
-    static resetCounters () {
-        createdGatesCounter = 0;
-        identitiesCounter = 0;
-        placedMeasurementGates = 0;
-        erroredGates = 0;
+        circuit.erroredGates--;
     }
 }
 
