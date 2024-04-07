@@ -14,29 +14,37 @@
     margin-right: 10px;
     margin-top: 10px;
     margin-right: 12px;
+    color: #333;
     background-color: transparent;
     position: relative;
     cursor: pointer;
     user-select: none;
     vertical-align: top;
-    border: 2px solid black;
+    border: 2px solid #333;
     border-radius: 5px;
     transition: 0.2s;
     opacity: 0.6;
     z-index: 4;
 }
 
-/* Make the image inside this button cover all the space.
-*/
-.add-custom-gate img {
-    max-width: 100%;
-    max-height: 100%;
+.add-custom-gate span {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 40px;
 }
 
 /* Revert to full opacity on hover.
 */
 .add-custom-gate:hover {
     opacity: 1;
+}
+
+.add-custom-gate[disabled] {
+    color: red;
+    border: 2px solid red;
+    cursor: not-allowed;
 }
 
 /* Modal-like window for the creation of a new gate.
@@ -63,15 +71,27 @@ gatebuilder-body {
     position: relative;
     background-color: white;
     border-radius: 5px;
-    width: 500px;
-    height: 450px;
+    width: 400px;
+    height: 400px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+
+gatebuilder description {
+    position: absolute;
+    display: block;
+    background-color: lightgray;
+    border-radius: 5px;
+    width: 200px;
+    top: 50px;
+    left: 10px;
+    bottom: 10px;
+} 
 
 gatebuilder hr {
     position: absolute;
     left: 10px;
     top: 30px;
+    width: 60%;
 }
 
 /* Input widget titles.
@@ -85,62 +105,6 @@ gatebuilder label {
     font-weight: bold;
 }
 
-/* Left half of gatebuilder.
-   Desc: invisible container, holds the radio buttons list and the unitary
-         textarea, fading border from the bottom left corner and back.
-*/
-gatebuilder form {
-    position: absolute;
-    top: 50px;
-    left: 10px;
-    height: 86%;
-    width: 290px;
-    border-radius: 10px;
-    border: 1px solid;
-    border-image: linear-gradient(to right bottom, transparent 70%, black) 1;
-}
-
-/* Unitary matrix text area.
-   Desc: typical lightgreen background color, extends up to a maximum on
-         both dimensions, overflows in both of them too, marginalized.
-*/
-gatebuilder form textarea {
-    background-color: rgb(175, 236, 175);
-    border: 1px solid black;
-    margin-left: 30px;
-    margin-top: 10px;
-    max-height: 220px;
-    max-width: 220px;
-    overflow: auto;
-    font-family: 'Times New Roman', Times, serif;
-    width: 150px;
-    height: 150px;
-    transition: opacity 0.2s;
-}
-
-/* Import unitary matrix button
-   Desc: thinner copy of toolbox buttons.
-*/
-gatebuilder form .import {
-    background-color: rgb(165, 159, 159);
-    color: black;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    width: 150px;
-    transition: border 0.2s;
-    height: 20px;
-    margin-left: 30px;
-    margin-top: 10px;
-    transition: 0.2s;
-}
-
-/* Show button's border on hover to highlight interactability.
-*/
-gatebuilder form .import:hover {
-    border: 1px solid black;
-}
-
 /* Make form widgets transparent and uninteractable when disabled.
 */
 gatebuilder input[disabled],
@@ -150,26 +114,11 @@ gatebuilder button[disabled] {
     cursor: not-allowed;
 }
 
-/* Right side of the gatebuilder.
-   Desc: Vertical curved rectangle,
-         lightgray background, marginalized,
-         covers the vast amount of the gatebuilder's height.
-*/
-gatebuilder description {
-    position: absolute;
-    background-color: lightgray;
-    border-radius: 5px;
-    height: 95.5%;
-    left: 315px;
-    right: 10px;
-    top: 10px;
-}
-
 /* Inputboxes for the symbols and titles.
    Desc: typical lightgreen background, black letters, times new roman
          marginalized.
 */
-gatebuilder description input {
+gatebuilder input {
     background-color: rgb(175, 236, 175);
     border: 1px solid black;
     position: relative;
@@ -183,16 +132,18 @@ gatebuilder description input {
 /* Description text area.
    Desc: similar to form textarea, extends and overflows only vertically.
 */
-gatebuilder description textarea {
+gatebuilder textarea {
+    position: absolute;
     background-color: rgb(175, 236, 175);
     border: 1px solid black;
-    margin-left: 10px;
-    margin-right: 10px;
     resize: vertical;
-    width: 85%;
-    max-height: 150px;
+    height: 100px;
+    max-height: 200px;
     font-family: 'Times New Roman', Times, serif;
     overflow-y: auto;
+    left: 220px;
+    top: 74.5px;
+    width: 160px;
 }
 
 /* Create and close buttons container.

@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>QuaCiDe</title>
         <link rel="stylesheet" type="text/css" href="styles/default/base.css">
-        <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="media/favicon.ico" type="image/x-icon">
     </head>
     <body>
         <main-title>
@@ -46,6 +46,14 @@
             <vr></vr>
             <counter id="stepsCounter">Steps:   </counter>
             <vr></vr>
+            <button class="toggle" id="endianness" title=
+"Current format: Big Endian
+|a〉---------
+                        loads as |ab〉
+|b〉---------
+
+Click to toggle.">&#x2B9D;</button>
+            <vr></vr>
         </toolbar>
 
         <toolbox>
@@ -58,18 +66,18 @@
                 <label>Probes</label>
                 <section id="probesList">
                         <!-- MEASUREMENT GATE -->
-                    <gate id="measurementGate"><img src="icons/measurement.png" alt="M" draggable="false"></gate>
+                    <gate id="measurementGate"><img src="media/measurement.png" alt="M" draggable="false"></gate>
                     <!-- CONTROL symbol-->
-                    <gate id="controlGate"><img src="icons/control.png" alt="C" draggable="false"></gate> 
+                    <gate id="controlGate"><img src="media/control.png" alt="C" draggable="false"></gate> 
                     <!-- SWAP -->
-                    <gate id="swapGate"><img src="icons/swap.png" alt="SW" draggable="false"></gate> 
+                    <gate id="swapGate"><img src="media/swap.png" alt="SW" draggable="false"></gate> 
                 </section>
 
                 <!-- Standard turns around the Bloch sphere -->
                 <label>Turns</label>
                 <section id="turnsList">
                     <!-- PAULI X-->
-                    <gate id="xGate"><img src="icons/pauliX.png" alt="X" draggable="false"></gate> 
+                    <gate id="xGate"><img src="media/pauliX.png" alt="X" draggable="false"></gate> 
                     <!-- PAULI Y-->
                     <gate id="yGate"><span>Y</span></gate> 
                     <!-- PAULI Z-->
@@ -114,9 +122,7 @@
                 <label>Custom</label>
                 <section id="customsList">
                     <!-- ADD NEW GATE BUTTON -->
-                    <button class="add-custom-gate" id="addGate">
-                        <img src="icons/custom.png" alt="Cu" draggable="false">
-                    </button>         
+                    <button class="add-custom-gate" id="addGate" title="Create custom gate..."><span>+</span></button>         
                     <!-- CUSTOM GATE TEMPLATE -->
                     <gate id="templateCustomGate" style="display: none;"><span>CG</span></gate> 
                     <!-- Dummy support "gate" for when a real gate spans multiple qubits -->
@@ -165,7 +171,7 @@
                 </button> 
             </buttons-row>
 
-            <version-label>v0.3.5</version-label>
+            <version-label>v0.4</version-label>
         </toolbox>
 
         <!-- 'Run Button' modal divs-->
@@ -194,13 +200,13 @@
                     <!-- Plot selection buttons -->
                     <selections-menu>
                         <button class="selection" id="showCountsButton"  title="Show counts histogram" style="display: none;">
-                            <img src="icons/counts-plot-img.png" alt="C" draggable="false">
+                            <img src="media/counts-plot-img.png" alt="C" draggable="false">
                         </button>
                         <button class="selection" id="showAmpsButton" title="Show amplitudes heatmap" style="display: none;">
-                            <img src="icons/amps-plot-img.png" alt="A" draggable="false">
+                            <img src="media/amps-plot-img.png" alt="A" draggable="false">
                         </button>
                         <button class="selection" id="showUnitaryButton" title="Show unitary matrix" style="display: none;">
-                            <img src="icons/unitary-plot-img.png" alt="U" draggable="false">
+                            <img src="media/unitary-plot-img.png" alt="U" draggable="false">
                         </button>
                     </selections-menu>
                 </display>
@@ -271,37 +277,20 @@
         <gatebuilder style="display: none;">
             <gatebuilder-body>
                 <label style="top: 10px; left: 10px;">Gate builder</label>
-                <hr style="width: 250px;">
-
-                <!-- Left side - source of gate -->
-                <form name="creationForm">
-                    <br>
-                    <input type="radio" id="circ" name="source" style="accent-color: green;">
-                    <label for="circ">From current circuit</label>
-                    <br><br>
-                    <input type="radio" id="unit" name="source" style="accent-color: green;">
-                    <label for="unit">From unitary matrix</label>
-                    <br>
-                    <button type="button" class="import" id="importUnitaryInGB">Import from JSON...</button><br>
-                    <textarea placeholder="[[1, 0], [0, 1]]" id="unitaryTextarea"></textarea>
-                </form>
-
-                <!-- Right side - description of gate -->
+                <hr>
                 <description>
                     <label for="symbol" style="left: 10px; top: 5px;">Symbol: </label><br>
                     <input type="text" style="top: 5px;" id="symbol">
                     <br><br>
                     <label for="title" style="left: 10px;">Title: </label><br>
                     <input type="text" id="title">
-                    <br><br>
-                    <label for="context" style="left: 10px;">Description: </label><br>
-                    <textarea id="context"></textarea>
-                    <br>
                     <buttons-col>
                         <button class="big-button" id="createGateButton">Create gate</button>
                         <button class="big-button" id="closeGatebuilder">Close</button>
-                    </buttons-col>
+                    </buttons-col>          
                 </description>
+                <label for="context" style="position: absolute; top: 55px; left: 220px;">Description: </label><br>
+                <textarea id="context"></textarea>
             </gatebuilder-body>
         </gatebuilder>
 

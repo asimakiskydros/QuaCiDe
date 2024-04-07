@@ -16,3 +16,6 @@ export function alertErrorsOnCircuit () {
 export function alertNonUnitary () {
     alert('Creation failed; the given input was not a unitary matrix.');
 }
+export function alertCreationDisallowed () {
+    alert('Creation blocked; your circuit is invalid.');
+}

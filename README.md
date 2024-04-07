@@ -26,6 +26,7 @@ The UI offers a variety of user-friendly actions:
   become unified into one.
 * Perform the previous two actions while pressing `SHIFT` to revert to default state.
 * See circuit-relevant stats, like `#qubits`, `#gates`, `#steps`, on the live counters.
+* Turn circuits into custom gates by pressing the cross button or `CTRL + a`.
 * Export the current circuit layout as JSON by pressing the `Export` button or `CTRL + s`.
 * Import new circuit layout from valid JSON through the `Import` button or by pressing `CTRL + SHIFT + s`.
 * Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z`/`CTRL + y` respectively.
@@ -37,7 +38,7 @@ The UI offers a variety of user-friendly actions:
 ## Demo
 Here's a quick demo covering some of the most basic features:
 
-![demo-gif](https://github.com/asimakiskydros/QuaCiDe/blob/main/demos/demo-1.gif)
+![demo-gif](https://github.com/asimakiskydros/QuaCiDe/blob/main/media/demo-1.gif)
 
 ## About
 * This project acts as my Bachelor's thesis. 

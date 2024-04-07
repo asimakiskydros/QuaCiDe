@@ -53,7 +53,8 @@ qubit-state {
     width: 30px;
     color: black;
     cursor: pointer;
-    background-color: white;
+    background-color: transparent;
+    border-radius: 7px;
     border: none;
     font-size: 17px;
     transition: background-color 0.2s;

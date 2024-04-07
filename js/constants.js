@@ -1,5 +1,5 @@
 /**
- * The blank region seperating the webpage title and the first qubit.
+ * The blank region seperating the container ceiling and the first qubit.
  */
 export const TOP_BOUNDARY = 10;
 
@@ -32,3 +32,8 @@ export const LEFT_OFFSET = 90;
  * A qubit wire's half height, i.e. the distance from its container's top border to the wire element.
  */
 export const WIRE_HALF_ORBIT = 25;
+
+/**
+ * The amount of allowed active tabs at a time.
+ */
+export const MAX_ACTIVE_TABS = 15;

@@ -3,15 +3,10 @@ import * as Alerts    from './alerts.js';
 import * as Elements  from './elements.js';
 import { Circuit }    from './circuit.js';
 import { Gate }       from './gate.js';
-import { Qubit }      from './qubit.js';
 import { tabs } from './main.js';
 import { Tab } from './tab.js';
 import { circuit } from './main.js';
 
-// modal checkboxes
-export const exeButton   = document.getElementById('executeButton');
-export const backendList = document.getElementById('backendList');
-export const shotsBox    = document.getElementById('shotsInputBox');
 // compile all checkboxes for easier use
 export const checkboxes = [Elements.countsCheckbox, Elements.ampsCheckbox, Elements.unitaryCheckbox];
 // set server ip
@@ -22,6 +17,23 @@ export const modal = document.querySelector('modal');
 export const gatebuilder = document.querySelector('gatebuilder');
 
 let canvasCounts, canvasAmps, canvasUnitary, abortController, createdGates = 0;
+
+// store tab-shiftable divs 
+const focusablesMain  = [
+    Elements.includeTabButton, Elements.addGateButton,
+    Elements.runButton, Elements.undoButton, Elements.redoButton,
+    Elements.clearButton, Elements.importButton, Elements.exportButton
+];
+const focusablesModal = [
+    Elements.countsCheckbox, Elements.backendList, Elements.shotsInputBox,
+    Elements.ampsCheckbox, Elements.unitaryCheckbox,Elements.countsOptionButton,
+    Elements.ampsOptionButton, Elements.unitaryOptionButton,
+    Elements.exeButton, Elements.closeModalButton
+];
+const focusablesGB    = [
+    Elements.symbol, Elements.title, Elements.context,
+    Elements.createGateButton, Elements.closeGBButton
+];
 
 /**
  * Feeds drag and drop behavior to the given gate.
@@ -218,7 +230,7 @@ export function handleImport (event) {
             else {
                 // if its the last object, then it is the circuit representation.
                 // spawn a new tab and show it
-                const tab = new Tab(tabs.length);
+                const tab = new Tab();
                 tab.snapshot = template;
                 tab.title = file.name.split('.')[0];
                 tabs.push(tab);
@@ -285,15 +297,16 @@ export function handleExport () {
  */
 export function disableModalWidgets (state) {
     if (state) {
-        for (const widget of checkboxes) widget.disabeld = true;
-        exeButton.disabeld = true;
-        backendList.disabeld = true;
-        shotsBox.disabeld = true;
+        for (const widget of checkboxes) widget.disabled = true;
+        Elements.exeButton.disabled = true;
+        Elements.backendList.disabled = true;
+        Elements.shotsInputBox.disabled = true;
     }
     else {
-        exeButton.disabled = !checkboxes.some(cb => cb.checked);
-        backendList.disabeld = !Elements.countsCheckbox.checked;
-        shotsBox.disabled = !Elements.countsCheckbox.checked;
+        for (const widget of checkboxes) widget.disabled = false;
+        Elements.exeButton.disabled = !checkboxes.some(cb => cb.checked);
+        Elements.backendList.disabled = !Elements.countsCheckbox.checked;
+        Elements.shotsInputBox.disabled = !Elements.countsCheckbox.checked;
     }
 }
 
@@ -380,12 +393,13 @@ export function handleExecution () {
     template.includeCounts  = Elements.countsCheckbox.checked;
     template.includeAmps    = Elements.ampsCheckbox.checked;
     template.includeUnitary = Elements.unitaryCheckbox.checked;
+    // fetch selected endianness
+    template.bigEndian      = document.getElementById('endianness').textContent === "\u2B9D";
     // fetch shots and backend from input boxes in the modal GUI
     template.shots = parseInt(
-        document.getElementById('shotsInputBox').value || 
-        document.getElementById('shotsInputBox').placeholder
+        Elements.shotsInputBox.value || Elements.shotsInputBox.placeholder
     );
-    template.backend = document.getElementById('backendList').value;
+    template.backend = Elements.backendList.value;
     // re-include the padded template
     payload.push(JSON.stringify(template));
 
@@ -395,7 +409,7 @@ export function handleExecution () {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: payload.join('\r\n'),
+        body: JSON.stringify(payload.join('\r\n')),
         signal: abortController.signal,
     })
     .then(response => {
@@ -476,8 +490,8 @@ export function fastCopyGate (e, gate) {
 
     const qubit = circuit.getQubit(gate.owner);
     if (!qubit) return;
-    const i = qubit.argfindGate(gate);
-    if (i === null) return;
+    const step = qubit.argfindGate(gate);
+    if (step === null) return;
     
     circuit.saveSnapshot();
     // copy the gate along with its (potential) power
@@ -487,13 +501,27 @@ export function fastCopyGate (e, gate) {
 
     if (e.shiftKey)
         // summon a new column for the new gate
-        circuit.attachGateToQubit(copy, qubit, i + 0.5);
+        circuit.attachGateToQubit(copy, qubit, step + 0.5);
     else {
-        // for vertical copying, the new gate must jump over the entire og gate's span.
-        const jump = circuit.argfindQubit(qubit) + gate.span;
-        while (jump >= circuit.qubits.length) circuit.appendQubit();
+        // for vertical copying, the new gate and every existing gate must jump 'span' positions downward.
+        const i = circuit.argfindQubit(qubit);
+        // the last qubit index that holds a gate prior to change. The conditional exists because
+        // in the starting circuit state, the last qubit may not hold any gates and still exist.
+        const lastGateIdx = circuit.qubits.length - (circuit.qubits.at(-1).weight > 0 ? 1 : 2);
+        // add 'span' new qubits; the extra length(height) required is that of the copy
+        for (let j = 0; j < gate.span; j++) circuit.appendQubit();
 
-        circuit.attachGateToQubit(copy, circuit.qubits[jump], i);
+        for (let j = lastGateIdx; j >= i + gate.span; j--) {
+            const qOther = circuit.qubits[j];
+            // for every existing non-trivial gate, looking from the bottom up, move it 'span' positions downward
+            if (step < qOther.weight && qOther.gates[step].type !== 'identityGate' && qOther.gates[step].type[0] !== '^') {
+                const residentGate = qOther.gates[step];
+                circuit.detachGateFromQubit(residentGate, residentGate.owner);
+                circuit.attachGateToQubit(residentGate, circuit.qubits[j + gate.span], step);
+            }
+        }
+        // add the copy 'span' positions down the original
+        circuit.attachGateToQubit(copy, circuit.qubits[i + gate.span], step);
     }
     circuit.refresh();
 }
@@ -515,7 +543,7 @@ export function handleClear () {
         qubit.registerColor = '';
     }
     circuit.updateRegisterBorders();
-    circuit.refreshStatCounters();
+    circuit.refreshToolbarWidgets();
 
     // push saved snapshot if different
     circuit.saveSnapshot(snapshot);
@@ -536,10 +564,12 @@ export function handleRunButton () {
     modal.style.display = 'flex';
 
     // disable execution button if all options are unchecked
-    exeButton.disabled = !checkboxes.some(cb => cb.checked);
+    Elements.exeButton.disabled = !checkboxes.some(cb => cb.checked);
     // disable backend list and shots box if counts is unchecked
-    backendList.disabled = !Elements.countsCheckbox.checked;
-    shotsBox.disabled = !Elements.countsCheckbox.checked;
+    Elements.backendList.disabled = !Elements.countsCheckbox.checked;
+    Elements.shotsInputBox.disabled = !Elements.countsCheckbox.checked;
+    // unfocus from the currently focused element
+    document.activeElement.blur();
 }
 
 /**
@@ -576,6 +606,7 @@ export function handleExponential (gate, value, parent, pos) {
     }
     // handle run button based on context
     Functions.toggleRunButton();
+    Functions.toggleAddGateButton();
 }
 
 /**
@@ -628,29 +659,17 @@ export function handlePostSelectionBorder (gate) {
  * invalid.
  */
 export function handleGateBuilder () {
+    // disallow creation if the circuit is empty, contains measurements or has errors
+    if (Elements.addGateButton.disabled) {
+        Alerts.alertCreationDisallowed();
+        return;
+    }
     // summon window
-    gatebuilder.style.display = 'flex';
-
-    const fromCircuitOption = document.getElementById('circ');
-    const fromUnitaryOption = document.getElementById('unit');
-    // disallow creation from circuit if it contains nothing, any measurement gates or has errors.
-    fromCircuitOption.disabled = circuit.gatesCounter === 0 || circuit.erroredGates > 0 || circuit.placedMeasurementGates > 0;
-
-    // if the circuit option is invalid, auto-toggle the unitary option
-    if (fromCircuitOption.disabled) fromUnitaryOption.checked = true;
-    // otherwise default to the circuit option
-    else fromCircuitOption.checked = true;
-
-    handleUnitaryMatrixImport();
-}
-
-/**
- * Toggles the interactability of unitary creation widgets based
- * on radio choice.
- */
-export function handleUnitaryMatrixImport () {
-    Elements.gbImportButton.disabled = !Elements.unitaryRadio.checked;
-    Elements.unitaryTextarea.disabled = !Elements.unitaryRadio.checked;
+    gatebuilder.style.display   = 'flex';
+    Elements.symbol.placeholder = `CG#${createdGates + 1}`;
+    Elements.title.placeholder  = `Custom Gate #${createdGates + 1}`;
+    // unfocus from the currently focused element
+    document.activeElement.blur();
 }
 
 /**
@@ -663,7 +682,9 @@ export function createCustomGate (definition) {
     // create new custom gate spawner.
     const gate = Elements.templateCustomGate.cloneNode(true);
     gate.id = `customGate-${createdGates++}`;
-    const gateSymbol = definition?.symbol || Elements.symbol.value || 'CG#' + createdGates;
+
+    // set symbol
+    const gateSymbol = definition?.symbol || Elements.symbol.value || Elements.symbol.placeholder;
     gate.innerHTML = `<span>${gateSymbol}</span>`;
     // this changes for custom gates, idk why.
     gate.style.marginRight = '14px';
@@ -677,52 +698,33 @@ export function createCustomGate (definition) {
     gateContext.id = gate.id + 'Context';
     if (definition) gateContext.innerHTML = definition.context;
     else {
-        gateContext.innerHTML = `<b>${Elements.title.value || 'Custom Gate #' + createdGates}</b><br>`;
+        gateContext.innerHTML = `<b>${Elements.title.value || Elements.title.placeholder}</b><br>`;
         for (const line of Functions.explode(Elements.context.value, Math.max(Elements.title.value.length, 20) + 5)) 
             gateContext.innerHTML += `<br>${line}`;
+        gateContext.innerHTML += `<br><br>SHIFT+Click to delete.`;
     }
 
-    let flag = true;
     // save the gate definition inside its object structure
     if (definition) {
         gate.definition = JSON.stringify(definition);
         gate.qubitSpan = definition.length;
     }
-    else if (document.getElementById('circ').checked) {
+    else {
         const snapshot   = circuit.makeTemplate();
         snapshot.symbol  = gateSymbol;
         snapshot.context = gateContext.innerHTML;
+        snapshot.id      = gate.id;
         gate.definition  = JSON.stringify(snapshot);
         gate.qubitSpan   = snapshot.length; 
     }
-    else try {
-        const matrix = Elements.unitaryTextarea.value || Elements.unitaryTextarea.placeholder; 
-        // TODO: this doesnt work...
-        if (!Functions.isUnitary(matrix)) throw new Error();
-        else {
-            const trimmed   = matrix.replace(/\s/g, '');
-            gate.definition = trimmed;
-            // '],' instances in a JSON representation of a matrix appear one time less than the number of rows
-            // which is also the number of qubits this gate spans
-            const matches  = trimmed.match(/\],/);
-            gate.qubitSpan = matches ? matches.length + 1 : 0;
-        }
-    }
-    catch (error) {
-        flag = false;
-        closeGatebuilder();
-        Alerts.alertNonUnitary();
-    }
 
-    if (flag) {
-        // add context to body
-        document.body.appendChild(gateContext);
-        // add new gate to the toolbox, initialize and close
-        gate.style.display = 'inline-block';
-        Elements.customGatesList.appendChild(gate);
-        initializeGate(gate, true);
-        closeGatebuilder();
-    }
+    // add context to body
+    document.body.appendChild(gateContext);
+    // add new gate to the toolbox, initialize and close
+    gate.style.display = 'inline-block';
+    Elements.customGatesList.appendChild(gate);
+    initializeGate(gate, true);
+    closeGatebuilder();
 }
 
 /**
@@ -732,7 +734,6 @@ export function closeGatebuilder () {
     Elements.symbol.value = '';
     Elements.title.value = '';
     Elements.context.value = '';
-    Elements.unitaryTextarea.value = '';
     gatebuilder.style.display = 'none';
 }
 
@@ -749,7 +750,7 @@ export function initializeGate (gate, isCustom) {
      */
     gate.addEventListener('mousedown', (e) => {
         // activate only on left click
-        if (e.button !== 0) return;
+        if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.altKey) return;
         // create new gate based on specifications
         const copy = new Gate(gate, isCustom ? gate.qubitSpan : 1);
         // this is needed the first time to move the newly created gate appropriately. idk why
@@ -758,19 +759,65 @@ export function initializeGate (gate, isCustom) {
         copy.move(e.clientX, e.clientY);
     });
 
+    const contextMenu = document.getElementById(gate.id + 'Context');
     /**
      * On hovering a gate on the toolbox, show correct
      * context menu, positioned just above it.
      * Vanish it again on mouseout.
      */
-    gate.addEventListener('mouseover', () => {
-        const contextMenu = document.getElementById(gate.id + 'Context');
-        const gateRect = gate.getBoundingClientRect();
-        contextMenu.style.display = 'inline-block';
-        contextMenu.style.top = gateRect.bottom + 'px';
-        contextMenu.style.left = gateRect.left + 'px';
+    if (contextMenu) {
+        gate.addEventListener('mouseover', () => {
+            const gateRect = gate.getBoundingClientRect();
+            contextMenu.style.display = 'inline-block';
+            contextMenu.style.top = gateRect.bottom + 'px';
+            contextMenu.style.left = gateRect.left + 'px';
+        });
+        gate.addEventListener('mouseout', () => {
+            contextMenu.style.display = 'none';
+        });
+    }
+
+    /**
+     * Delete the custom gate from the toolbox on SHIFT + clicking
+     */
+    if (isCustom) gate.addEventListener('click', (e) => {
+        if (!e.shiftKey || e.button !== 0) return;
+
+        if (window.confirm("This action will remove this gate. Are you sure?")) {
+            gate.remove();
+            contextMenu.remove();
+        }
     });
-    gate.addEventListener('mouseout', () => {
-        document.getElementById(gate.id + 'Context').style.display = 'none';
-    });
+}
+
+/**
+ * Shift through the next element to focus on TAB press on the specific window.
+ * @param {*} e The event that proc-ed this behavior.
+ * @param {*} which The concerned window ('modal', 'gatebuilder'). Everything else 
+ *                  evaluates to the main webpage.
+ */
+export function handleTabPress (e, which) {
+    // shift through specific divs on tab shuffle
+    e.preventDefault();
+            
+    let focusables = undefined;
+    switch (which) {
+        case 'modal':
+            focusables = focusablesModal;
+            break;
+        case 'gatebuilder':
+            focusables = focusablesGB;
+            break;
+        default:
+            focusables = focusablesMain;
+    }
+
+    // cycle through the elements, backwards if shift is pressed, forwards otherwise, until
+    // an enabled element is found
+    let i = (focusables.indexOf(document.activeElement) + (e.shiftKey ? -1 : 1) + focusables.length) % focusables.length;
+    while((focusables[i].hasAttribute('disabled') && focusables[i].disabled) || focusables[i].style.display === 'none') 
+        i = (i + (e.shiftKey ? -1 : 1) + focusables.length) % focusables.length;
+
+    // focus the enabled element
+    focusables[i].focus();
 }

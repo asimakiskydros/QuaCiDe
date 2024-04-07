@@ -1,7 +1,7 @@
 import * as Behaviors from './behaviors.js';
 import { circuit } from './main.js';
 
-const iconsDir            = 'icons';
+const iconsDir            = 'media';
 const measurementTextures = ['measurement.png', 'post-select-0.png', 'post-select-1.png'];
 const measurementLabels   = ['M', 'PS-0', 'PS-1'];
 const controlTextures     = ['control.png', 'anticontrol.png'];

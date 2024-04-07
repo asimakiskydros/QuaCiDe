@@ -30,6 +30,8 @@ toolbox-title {
     font-weight: bold;
     text-align: center;
     display: block;
+    user-select: none;
+    cursor: pointer;
 }
 
 /* Line seperator between toolbox subsections.
@@ -166,14 +168,13 @@ gate:hover {
     background-color: rgb(175, 236, 175) !important;
 }
 
-/* Big black bold letters inside the gates,
+/* Big black letters inside the gates,
    as per standard.
 */
 gate span {
     position: absolute;
     top: 50%;
     left: 50%;
-    font-weight: bold;
     transform: translate(-50%, -50%);
     font-size: 22px;
 }

@@ -13,6 +13,10 @@ body {
     overflow: hidden;
 }
 
+:focus-visible {
+    outline: 2px solid green;
+}
+
 /*  The main headline at the top of the page.
     Desc: Big, centered white letters inside 
           a dark gray rectangle.
@@ -30,6 +34,8 @@ main-title {
     left: 0;
     width: 100%;
     min-width: 1000px;
+    user-select: none;
+    cursor: pointer;
 }
 
 /* Customization for the main title.
@@ -95,6 +101,29 @@ toolbar vr {
     margin-left: 5px;
 }
 
+/* Endianess toggle.
+   Desc: transparent button, square-like, curved,
+         displays an arrow.
+*/
+.toggle {
+    height: 85%;
+    position: relative;
+    display: inline-block;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    margin-left: 5px;
+    text-align: center;
+    width: 25px;
+}
+
+/* Shine toggle lightgray on hover to highlight interactability.
+*/
+.toggle:hover {
+    background-color: lightgray;
+}
+
 /* Container for the tab links.
    Desc: invisible flexbox, extends row-wise,
          covers the tab-content element partially
@@ -108,6 +137,7 @@ tabs {
     left: 213px;
     top: 83px;
     right: 10px;
+    overflow-y: auto;
 }
 
 /* Header objects representing each independent tab. Each holds
@@ -119,21 +149,18 @@ tab-link {
     background-color: white;
     position: relative;
     float: left;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
     border: 2px solid #333;
-    border-bottom: none;
+    border-radius: 7px;
     cursor: pointer;
     width: 150px;
+    min-width: 100px;
     height: 35px;
-    z-index: 2;
     display: flex;
     justify-content: center;
     align-items: center;
     transition: background-color 0.2s;
     animation: slideIn 0.1s ease;
+    margin-right: 5px;
 }
 
 /* Slide animation for the creation of a tab-link.
@@ -186,6 +213,16 @@ tab-link:hover input {
     background-color: rgb(175, 236, 175);
 }
 
+/* Make background and inputbox permanently lightgreen when the link is active.
+*/
+tab-link.active {
+    background-color: rgb(175, 236, 175);
+}
+
+tab-link.active input {
+    background-color: rgb(175, 236, 175);
+}
+
 /* The center-stage of the page, where the circuits get shown
    Desc: white canvas, flex, overflows on both dimensions,
          rounded thick borders.
@@ -194,13 +231,14 @@ tab-content {
     position: absolute;
     display: flex;
     left: 213px;
-    top: 118px;
+    top: 130px;
     right: 0;
     bottom: 35px;
     border: 2px solid #333;
+    border-radius: 7px;
     border-right: none;
-    border-bottom-left-radius: 10px;
-    z-index: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
     overflow: auto;
 }
 
@@ -209,8 +247,8 @@ tab-content {
          curved square container, Arial.
 */
 .include-tab {
-    height: 30px;
-    width: 30px;
+    height: 35px;
+    width: 35px;
     background-color: transparent;
     border: none;
     border-radius: 7px;
@@ -219,7 +257,6 @@ tab-content {
     font-family: Arial, Helvetica, sans-serif;
     cursor: pointer;
     margin-top: 2px;
-    margin-left: 3px;
     transition: background-color 0.2s;
 }
 

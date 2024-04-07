@@ -1,6 +1,7 @@
 import * as Constants from './constants.js';
 import { circuit } from './main.js';
 import { Qubit } from './qubit.js';
+import { addGateButton } from './elements.js';
 
 const tealgrnColorscale = [
     [   0,   'rgb(0, 128, 128)'],
@@ -36,11 +37,11 @@ export function localize (event, hoveredGate) {
     const mean = 0.5 * (index * Constants.GATE_DELIMITER + (index + 1) * Constants.GATE_DELIMITER);
     // if the cursor falls below the mean that defines the range of the integer position, OR
     // the gate is hovering above an identity, itself, or a child supporting gate, fall back to the previous half.
-    const relativePosition = offset < mean                                              || 
-                            (index < hoveredQubit.weight                                &&
-                             hoveredQubit.gates[index].type !== 'identityGate'          &&
-                             !hoveredQubit.gates[index].type.includes(hoveredGate.type) &&
-                             hoveredQubit.gates[index] !== hoveredGate)         ? index - 0.5 : index;
+    const relativePosition = offset < mean                                                 || 
+                            (index < hoveredQubit.weight                                   &&
+                             hoveredQubit.gates[index].type !== 'identityGate'             &&
+                             !hoveredQubit.gates[index].type.includes(hoveredGate.body.id) &&
+                             hoveredQubit.gates[index] !== hoveredGate)                     ? index - 0.5 : index;
 
     return [relativePosition, hoveredQubit];
 }
@@ -136,7 +137,6 @@ export function assert (condition, message) {
 /**
  * Enable/Disable the run button based on whether 
  * errored gates currently exist on the circuit.
- * @param circuit The circuit to run (typically the currently shown).
  */
 export function toggleRunButton () {
     const runButton = document.getElementById('runButton');
@@ -148,6 +148,23 @@ export function toggleRunButton () {
         runButton.disabled = false;
         runButton.title = 'Prepare the circuit for execution (CTRL + X)';
     }
+}
+
+/**
+ * Enable/Disable the 'add new gate' button based on circuit validity.
+ */
+export function toggleAddGateButton () {
+    addGateButton.disabled = circuit.gatesCounter === circuit.identitiesCounter ||
+                             circuit.erroredGates > 0                           ||
+                             circuit.placedMeasurementGates > 0;
+    if (circuit.gatesCounter === circuit.identitiesCounter)
+        addGateButton.title = 'The circuit is empty.';
+    if (circuit.placedMeasurementGates > 0)
+        addGateButton.title = 'Nesting measurements is not allowed.';
+    if (circuit.erroredGates > 0)
+        addGateButton.title = 'The circuit contains errors!';
+    if (!addGateButton.disabled)
+        addGateButton.title = 'Add custom gate...';
 }
 
 /**
@@ -250,10 +267,11 @@ export function createUnitaryPlot(container, results) {
         xgap: 5,
         ygap: 5,
         zmin: 0,
-        zmax: 1
+        zmax: 1,
     }], {
         title: 'Unitary matrix',
-        yaxis: { autorange: 'reversed'},
+        yaxis:  { autorange: 'reversed', zeroline: false },
+        xaxis:  { zeroline: false },
         margin: { l: 50, r: 30, b: 50, t: 65, pad: 10 },
     }, {
         modeBarButtonsToAdd: [{
@@ -271,7 +289,7 @@ export function createUnitaryPlot(container, results) {
                 // Create a temporary link element and trigger the download
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'unitary_matrix.txt';
+                a.download = `Unitary matrix of ${circuit.title}.txt`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

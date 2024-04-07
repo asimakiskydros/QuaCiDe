@@ -1,19 +1,22 @@
 import { tabs, circuit, initialSnapshot } from './main.js';
 import * as Elements from './elements.js';
 
+let createdTabs = 0;
+
 class Tab {
     /**
      * Spawns a new tab with a fresh empty circuit.
-     * @param {*} id A unique id for this tab.
      */
-    constructor (id) {
+    constructor () {
         this._tablink = Elements.templateTabLink.cloneNode(true);
         this._namebox = this._tablink.querySelector('input');
-        this._namebox.placeholder = 'Circuit ' + (id + 1);
+        this._placeholder = 'Circuit ' + (++createdTabs);
+        this._namebox.placeholder = this._placeholder;
         this._snapshot = initialSnapshot;
         this._undoStack = [];
         this._redoStack = [];
         this._hidden = true;
+        this._endianness = "\u2B9D";
 
         // delete this tab on clicking the child tablink's delete button
         this._tablink.querySelector('.delete-tab').addEventListener('click', (e) => {
@@ -43,7 +46,7 @@ class Tab {
 
         // default to 'Circuit <id>' for empty names.
         this._namebox.addEventListener('blur', () => {
-            if (!this._namebox.value) this._namebox.placeholder = 'Circuit ' + (id + 1);
+            if (!this._namebox.value) this._namebox.placeholder = this._placeholder;
 
             circuit.title = this._namebox.value || this._namebox.placeholder;
         });
@@ -79,6 +82,8 @@ class Tab {
         [this._undoStack, this._redoStack] = circuit.undoRedoStacks;
         this._tablink.style.zIndex = 0;
         this._hidden = true;
+        this._endianness = circuit.endianness;
+        if (this._tablink.classList.contains('active')) this._tablink.classList.remove('active');
     }
     /**
      * Build the saved template and show this tab.
@@ -89,8 +94,10 @@ class Tab {
         this._tablink.style.zIndex = 2;
         circuit.undoRedoStacks = [this._undoStack, this._redoStack];
         circuit.title = this._namebox.value || this._namebox.placeholder || 'circuit';
+        circuit.endianness = this._endianness;
         circuit.buildFromTemplate(this._snapshot);
         this._hidden = false;
+        if (!this._tablink.classList.contains('active')) this._tablink.classList.add('active');
     }
 }
 

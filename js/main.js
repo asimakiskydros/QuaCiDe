@@ -13,12 +13,19 @@ export const initialSnapshot = circuit.makeTemplate();
 // fetch toolbox
 export const toolbox = document.querySelectorAll('gate');
 
+// scrollable divs info
+const gateList = document.querySelector('gate-list');
+const tabContent = document.querySelector('tab-content');
+const gateListScrollTop = gateList.scrollTop;
+const tabContentScrollTop = tabContent.scrollTop;
+const tabContentScrollLeft = tabContent.scrollLeft;
+
 document.addEventListener('DOMContentLoaded', function () {
     /**
      * On pressing the cross button, add a fresh tab.
      */
     Elements.includeTabButton.addEventListener('click', () => {
-        const tab = new Tab(tabs.length);
+        const tab = new Tab();
         if (tabs.length === 0) tab.tablink.style.animation = 'none';
         tabs.push(tab);
         tab.tablink.click();
@@ -34,11 +41,11 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     for (const checkbox of Behaviors.checkboxes)
         checkbox.addEventListener('change', () => {
-            Behaviors.exeButton.disabled = !Behaviors.checkboxes.some(cb => cb.checked);
+            Elements.exeButton.disabled = !Behaviors.checkboxes.some(cb => cb.checked);
 
             if (checkbox === Behaviors.checkboxes[0]) {
-                Behaviors.backendList.disabled = !checkbox.checked;
-                Behaviors.shotsBox.disabled = !checkbox.checked; 
+                Elements.backendList.disabled = !checkbox.checked;
+                Elements.shotsInputBox.disabled = !checkbox.checked; 
             }
         });
     
@@ -53,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * Export relevant circuit info to .JSONLines on clicking
      * the 'Export' button inside the toolbox.
      */
-    document.getElementById('exportButton').addEventListener('click', Behaviors.handleExport);
+    Elements.exportButton.addEventListener('click', Behaviors.handleExport);
 
     /**
      * Build circuit from user-given info through .JSON's on clicking the
@@ -63,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
      *  2. Opens File Explorer.
      */
     /*1.*/Elements.fileInputButton.addEventListener('change', Behaviors.handleImport);
-    /*2.*/document.getElementById('importButton').addEventListener('click', () => {
+    /*2.*/Elements.importButton.addEventListener('click', () => {
         Elements.fileInputButton.click();
     });
 
@@ -71,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * Make the main UI uninteractable and invoke the pre-execution modal
      * on clicking the 'Run Circuit' button.
      */
-    document.getElementById('runButton').addEventListener('click', Behaviors.handleRunButton);
+    Elements.runButton.addEventListener('click', Behaviors.handleRunButton);
 
     /**
      * Clicking outside the modal's borders assumes the user wants to exit it
@@ -85,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * Close the modal window and return to the main UI after clicking the
      * 'Close' button inside the modal.
      */
-    document.getElementById('closeModal').addEventListener('click', Behaviors.closeModal);
+    Elements.closeModalButton.addEventListener('click', Behaviors.closeModal);
 
     /**
      * Change output slide to the Counts histogram plot on clicking the
@@ -109,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * Run the execution script on the described circuit with the given parameters
      * on clicking the 'Execute Simulation' button inside the modal.
      */
-    document.getElementById('executeButton').addEventListener('click', Behaviors.handleExecution);
+    Elements.exeButton.addEventListener('click', Behaviors.handleExecution);
 
     /**
      * Cancel the youngest action taken and revert the state of the circuit accordingly.
@@ -124,17 +131,17 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Summon the gate builder window on clicking the 'add gate' button.
      */
-    document.getElementById('addGate').addEventListener('click', Behaviors.handleGateBuilder);
+    Elements.addGateButton.addEventListener('click', Behaviors.handleGateBuilder);
 
     /**
      * Close the gate builder window on clicking the 'close' button.
      */
-    document.getElementById('closeGatebuilder').addEventListener('click', Behaviors.closeGatebuilder);
+    Elements.closeGBButton.addEventListener('click', Behaviors.closeGatebuilder);
 
     /**
      * Create the new custom gate spawner based on specified inputs and add it to the toolbox.
      */
-    document.getElementById('createGateButton').addEventListener('click', () => { Behaviors.createCustomGate(); });
+    Elements.createGateButton.addEventListener('click', () => { Behaviors.createCustomGate(); });
 
     /**
      * Close the gate builder window if the user clicks out of bounds.
@@ -144,9 +151,39 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     /**
-     * Disable the unitary matrix input widgets if the corresponding radio isn't selected.
+     * Return to original scrolling position in the gatelist when clicking the toolbox title.
      */
-    for (const radio of document.querySelectorAll('input[name="source"]')) radio.addEventListener('change', Behaviors.handleUnitaryMatrixImport);
+    document.querySelector('toolbox-title').addEventListener('click', () => { gateList.scrollTop = gateListScrollTop; });
+    
+    /**
+     * Return to original scrolling position in the circuit when clicking the main title.
+     */
+    document.querySelector('main-title').addEventListener('click', () => { 
+        tabContent.scrollTop = tabContentScrollTop; 
+        tabContent.scrollLeft = tabContentScrollLeft; 
+    });
+
+    /**
+     * Toggle Endian format on clicking the toolbar toggler.
+     */
+    const endianToggle = document.getElementById('endianness');
+    endianToggle.addEventListener('click', () => {
+        // up arrow --> down arrow | down arrow --> up arrow
+        const wasBigEndian = endianToggle.textContent === "\u2B9D";
+        if (wasBigEndian) endianToggle.textContent = "\u2B9F";
+        else endianToggle.textContent = "\u2B9D";
+
+        // inform the loaded circuit of the change
+        circuit.endianness = endianToggle.textContent;
+
+        endianToggle.title = 
+`Current format: ${wasBigEndian ? 'Little': 'Big'} Endian
+|a〉---------
+                        loads as |${wasBigEndian ? 'ba' : 'ab'}〉
+|b〉---------
+
+Click to toggle.`
+    });
 
     /**
      * Add keyboard shortcuts for common actions.
@@ -156,16 +193,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if (Behaviors.modal.style.display !== 'none') {
             // Escape -> close modal
             if (e.key === 'Escape') Behaviors.closeModal();
+            else if (e.key === 'Tab') Behaviors.handleTabPress(e, 'modal');
             return;            
         }
         // likewise, if the gatebuilder is up allow only gb-specific actions
         if (Behaviors.gatebuilder.style.display !== 'none') {
             // Escape -> close gatebuilder
             if (e.key === 'Escape') Behaviors.closeGatebuilder();
+            else if (e.key === 'Tab') Behaviors.handleTabPress(e, 'gatebuilder');
             return;
         }
 
-        if (e.ctrlKey && e.shiftKey && (e.key === 'z' || e.key === 'Z'))
+        if (e.key == 'Tab') 
+            // CTRL + A -> Element shift
+            Behaviors.handleTabPress(e);
+        else if (e.ctrlKey && e.shiftKey && (e.key === 'z' || e.key === 'Z'))
             // CTRL + SHIFT + Z -> Redo
             circuit.loadNextSnapshot();
         else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y'))
@@ -193,6 +235,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // CTRL + X -> Run
             e.preventDefault();
             Behaviors.handleRunButton();
+        }
+        else if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) {
+            // CTRL + A -> Add gate
+            e.preventDefault();
+            Behaviors.handleGateBuilder();
         }
     });
 });
