@@ -1,8 +1,11 @@
 # QuaCiDe
 QuaCiDe (pronounced *cassidy*) is an intuitive, user-friendly quantum circuit designer made in HTML/JS/CSS/Python.
+Its simplistic design but powerful foundation aims to enable learning in the field of Quantum Computing and ease
+research and experimentation by liberating the user from technical demands, such as program installations, coding,
+scaling restrictions etc.
 
-## Installation
-The present product is still in development phase, therefore to access it you'll have to run its
+## (Alpha-phase) Installation
+The present product is still in Alpha development phase, therefore to access it you'll have to run its
 files in a controlled IDE environment that offers and/or supports servers for HTML execution.
 [Visual Studio Code](https://code.visualstudio.com/) running Live Server is recommended. Both
 [`base.html`](https://github.com/asimakiskydros/QuaCiDe/blob/main/base.html) and [`parser_script.py`](https://github.com/asimakiskydros/QuaCiDe/blob/main/parser_script.py)
@@ -35,7 +38,11 @@ The UI offers a variety of user-friendly actions:
 * Press `Run Circuit` or `CTRL + x` to summon the execution modal.
 * Exit the modal by clicking outside of it or by pressing `Esc`.
 * Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.
-* Receive output as interactable and downloadable plots.
+
+# Outputs
+* The user-defined circuit is translated into a Qiskit object under the hood and away from the user's system.
+* Qiskit-Aer's backends are used to run the parsed circuit, defaulting to QASM.
+* Outputs are returned to the user as completely interactable and readily downloadable plots.
 
 ## About
 * This project acts as my Bachelor's thesis. 
