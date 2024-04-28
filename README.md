@@ -39,7 +39,7 @@ The UI offers a variety of user-friendly actions:
 * Exit the modal by clicking outside of it or by pressing `Esc`.
 * Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.
 
-# Outputs
+## Outputs
 * The user-defined circuit is translated into a Qiskit object under the hood and away from the user's system.
 * Qiskit-Aer's backends are used to run the parsed circuit, defaulting to QASM.
 * Outputs are returned to the user as completely interactable and readily downloadable plots.
