@@ -45,5 +45,5 @@ The UI offers a variety of user-friendly actions:
 * Outputs are returned to the user as completely interactable and readily downloadable plots.
 
 ## About
-* This project acts as my Bachelor's thesis. 
+* This project acts as my [Bachelor's thesis](https://drive.google.com/file/d/11WY6MKDfsAy17eLjut5jI86e88H3RzIr/view). 
 * This project is not yet meant for F/OSS distribution and usage. Soon!
