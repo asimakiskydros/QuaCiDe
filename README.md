@@ -1,49 +1,54 @@
-# QuaCiDe
-QuaCiDe (pronounced *cassidy*) is an intuitive, user-friendly quantum circuit designer made in HTML/JS/CSS/Python.
-Its simplistic design but powerful foundation aims to enable learning in the field of Quantum Computing and ease
-research and experimentation by liberating the user from technical demands, such as program installations, coding,
-scaling restrictions etc.
+# <div style="text-align: center;">QuaCiDe</div>
 
-## (Alpha-phase) Installation
-The present product is still in Alpha development phase, therefore to access it you'll have to run its
-files in a controlled IDE environment that offers and/or supports servers for HTML execution.
-[Visual Studio Code](https://code.visualstudio.com/) running Live Server is recommended. Both
-[`base.html`](https://github.com/asimakiskydros/QuaCiDe/blob/main/base.html) and [`parser_script.py`](https://github.com/asimakiskydros/QuaCiDe/blob/main/parser_script.py)
-need to be running for the designer to be fully functional. Make sure Python 3 and all listed languages are supported by your system.
+<div style="text-align: center;">
+    <img src="./media/quacide logo.png" alt="QuaCiDe Logo" width="200px">
+
+QuaCiDe (pronounced *cassidy*) is an intuitive, user-friendly quantum circuit designer made in HTML/TS/CSS/Python. Its simplistic design but powerful foundation aims to enable learning in the field of Quantum Computing and ease research and experimentation by liberating the user from technical demands, such as program installations, coding, scaling restrictions etc.
+</div>
+
+## Local Installation
+The present product is still in Alpha development phase, therefore to access it you'll have to run its files in a controlled IDE environment that offers and/or supports servers for HTML execution. [Visual Studio Code](https://code.visualstudio.com/) running Node.js and Live Server is recommended. 
+
+You can install this package directly from the terminal:
+```
+npm install asimakiskydros/QuaCiDe
+```
+
+Both [`interface.html`](./interface.html) and [`qiskit-qasm.py`](./parsers/qiskit-qasm.py) need to be running for the designer to be fully functional. Make sure Python 3, Node.js and all listed languages are supported by your system.
+
+The first time you install and every time you make a change in the TypeScript code, run the following so your changes take effect:
+```
+npm run build
+```
 
 ## Usage
+<div>
+    <img src="./media/preview.png" alt="Designer Preview">
+</div>
+
 The UI offers a variety of user-friendly actions:
-* Drag-and-drop gates from the toolbox to the qubit wires to build your circuit.
-* New qubit wires are automatically created when dragging and discarded when unused.
-* Add and delete new qubits at will through the `+` and `x` buttons, shown on hover.
-* Clear the circuit through the `Clear` button or by pressing `CTRL + c`.
-* `Left-click + hold` on placed gates to move them around, `Right-click` them to delete them instantly.
-* `SHIFT + Left-click` on placed gates to spawn a copy next to them.
-* `CTRL + Left-click` on placed gates to spawn a copy below them.
-* Spawn new steps by shoving dragged gates in-between existing steps.
-* Empty steps are deleted automatically.
-* Add desired exponents to input-armed gates.
-* Apply postselection to desired qubits by `ALT + click`ing on measurement gates. 
-* `Left-click` on the qubit states to shuffle among the standard starting states.
-* `CTRL + Left-click` on the qubit states to shuffle between register colors. Neighboring register borders
-  become unified into one.
-* Perform the previous two actions while pressing `SHIFT` to revert to default state.
-* See circuit-relevant stats, like `#qubits`, `#gates`, `#steps`, on the live counters.
-* Toggle the endianness of the circuit register from the `⮝` button on the toolbar.
-* Have multiple circuits at once by declaring multiple tabs.
-* Turn circuits into custom gates by pressing the toolbox cross button or `CTRL + a`.
-* Export the current circuit layout as JSONLines by pressing the `Export` button or `CTRL + s`.
-* Import new circuit layout from valid JSONLines through the `Import` button or by pressing `CTRL + SHIFT + s`.
-* Undo/Redo actions through the relevant buttons or by pressing `CTRL + z` and `CTRL + SHIFT + z`/`CTRL + y` respectively.
-* Press `Run Circuit` or `CTRL + x` to summon the execution modal.
-* Exit the modal by clicking outside of it or by pressing `Esc`.
-* Set desired conditions for experiment and run your circuit on Qiskit through `Execute Simulation`.
+* All the mainstream one- and two-qubit gates are offered by default, along with measurements and controls, to be dragged and dropped on any qubit.
+* `SHIFT+click` on a gate to spawn a copy next to it. `CTRL+click` on it to spawn a copy below it. `Right-click` it to delete it instantly.
+* Shove gates between other placed gates to spawn new steps on command.
+* New qubits spawn at the bottom of the register each time a gate is picked up.
+* A set amount of initial qubits can also be spawned on demand by setting the `Min Qubits` variable on the toolbar.
+* Redundant qubits and steps are detected and deleted automatically.
+* Qubits are interactable threefold: `Click` their state display to shuffle between the Bloch sphere edges `|0⟩, |1⟩, |+⟩, |-⟩, |+i⟩, |-i⟩`; `CTRL+click` it to shuffle between color-coded registers. Neihboring registers with the same color get unified into one; `Double-click` on their name display to give it a different alias. Press `SHIFT` while doing any of the above to reset to the default value.
+* `Undo` and `Redo` actions on each circuit through the relevant toolbox buttons, or by pressing `CTRL+Z` and `CTRL+Y` respectively.
+* `Clear` everything on the current circuit through the relevant toolbox button or by pressing `CTRL+C`.
+* See the resources and the specifications of each circuit on the toolbar: `#Qubits`, `#Gates` and `#Steps` are updated on every change; `#Shots`, `Endian Order` and `Min Qubits` are set by the user.
+* Create and moderate multiple circuits at a time by spawning new `Tabs`. This can also be done by invoking `CTRL+Q`.
+* Turn valid circuits into custom gates through the relevant toolbox button or by pressing `CTRL+A`.
+* Customize the designer to your liking by changing the global `Settings`.
 
 ## Outputs
-* The user-defined circuit is translated into a Qiskit object under the hood and away from the user's system.
-* Qiskit-Aer's backends are used to run the parsed circuit, defaulting to QASM.
-* Outputs are returned to the user as completely interactable and readily downloadable plots.
+Execute the current circuit instance to get the output you desire: currently, two output kinds are offered: `counts` and `statevector`, with three more underway. All outputs can be found on the right-hand sidebar. Execution currently uses [`Qiskit`](https://github.com/Qiskit/qiskit) and [`Qiskit-Aer`](https://github.com/Qiskit/qiskit-aer) to run the experiment, with more options to come.
+
+<div style="display: grid; place-items: center">
+    <img src="./media/output.png" alt="Output Preview" width="500px">
+</div>
+
+Outputs are displayed as text but also as interactable charts. Text can be copied directly and charts are readily downloadable as PNGs.
 
 ## About
-* This project acts as my [Bachelor's thesis](https://drive.google.com/file/d/11WY6MKDfsAy17eLjut5jI86e88H3RzIr/view). 
-* This project is not yet meant for F/OSS distribution and usage. Soon!
+This project started as my [Bachelor's Thesis](https://drive.google.com/file/d/11WY6MKDfsAy17eLjut5jI86e88H3RzIr/view?usp=sharing), but quickly grew beyond that scope. While still being in Alpha stage and thus, not ready for F/OSS distribution, it is meant to become completely open to everyone in the near future. In the meantime, any suggestions are very welcome.

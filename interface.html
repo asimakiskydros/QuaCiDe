@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+        <meta charset="UTF-8">
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <title>QuaCiDe</title>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- load jquery -->
+        
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!-- load plotly -->
+
+        <link rel="stylesheet" type="text/css" href="styles/layout.css">
+
+        <link rel="icon" href="media/favicon.png" type="image/x-icon">
+
+    </head>
+
+    <body class="dark-theme"> <!-- start with black theme as default (probably what's wanted) -->
+
+        <toolbox>
+
+            <logo>
+
+                <img src="media/quacide logo.png" alt="Logo" draggable="false">
+
+                <description>
+
+                    <b>QuaCiDe</b> <!-- <b> is green, <span> is white -->
+                    <br><b><i><span>The</span> Qua<span>ntum</span> Ci<span>rcuit</span> De<span>signer</span></b></i>
+                    <br><br>
+                    Click to reset scrolling globally.
+
+                </description>
+
+            </logo>
+            
+            <label>Tools</label>
+
+            <panel class="gates"> <!-- pre-installed gates -->
+                
+                <gate id="measurement">
+                    <!-- construct the geiger counter modularily, so the parts can move -->
+                    <span class="arc">◠</span>
+
+                    <span class="arrow">↑</span>
+
+                    <span class="ket">0</span>
+
+                    <description>
+
+                        <b>Measurement</b>
+                        <br><br>
+                        Collapses the qubit state into one of the basis vectors, each with its respecting probability. ALT + Click to enforce postselection.
+
+                    </description>
+
+                </gate>
+                
+                <gate id="control">
+
+                    <span class="control-back">&bull;</span> <!-- this makes the anticontrol opaque -->
+
+                    <span class="control-front">&bull;</span>
+                    
+                    <description>
+
+                        <b>Control</b>
+                        <br><br>
+                        Thwarts the activation of the step, unless satisfied. By default, satisfies on state |1〉. ALT + Click to satisfy on state |0〉.
+
+                    </description>
+
+                </gate>
+
+                <gate id="swap" style="font-size: 35px; font-weight: bold;">
+                    
+                    &times;
+                
+                    <description>
+
+                        <b>SWAP Gate</b>
+                        <br><br>
+                        Swaps the states of two qubits. SWAP gates must come in pairs.
+
+                    </description>
+
+                </gate>
+
+                <gate id="x">
+                    
+                    <span class="background" style="display: none;">⬤</span> <!-- this makes the target opaque -->
+
+                    <span class="target" style="display: none;">&oplus;</span>
+                
+                    <span class="label">X</span>
+
+                    <description>
+
+                        <b>Pauli X Gate</b>
+                        <br><br>
+                        The NOT gate. 
+                        <br>Flips the qubit state on the x-axis.
+                        <br><br>As matrix:
+                        
+                        <table> <!-- matrix [[0, 1], [1, 0]]-->
+                            
+                            <tr><td>0</td><td>1</td></tr>
+
+                            <tr><td>1</td><td>0</td></tr>
+
+                        </table>
+
+                    </description>
+
+                </gate> 
+                
+                <gate id="y">
+                    
+                    Y
+                
+                    <description>
+
+                        <b>Pauli Y Gate</b>
+                        <br><br>
+                        Flips the qubit state on the y-axis.
+                        <br><br>As matrix:
+
+                        <table> <!-- matrix [[0, -i], [i, 0]]-->
+
+                            <tr><td>0</td><td>-i</td></tr>
+
+                            <tr><td>i</td><td>0</td></tr>
+
+                        </table>
+
+                    </description>
+
+                </gate> 
+                
+                <gate id="z">
+                
+                    <span class="control-front" style="display: none;">&bull;</span>
+
+                    <span class="label">Z</span>
+
+                    <description>
+
+                        <b>Pauli Z Gate</b>
+                        <br><br>
+                        The phase flip gate. Flips the qubit state on the z-axis.
+                        <br><br>As matrix:
+
+                        <table> <!-- matrix [[1, 0], [0, -1]]-->
+
+                            <tr><td>1</td><td>0</td></tr>
+
+                            <tr><td>0</td><td>-1</td></tr>
+
+                        </table>
+
+                    </description>
+                
+                </gate> 
+                
+                <gate id="h">
+                    
+                    H
+                
+                    <description>
+
+                        <b>Hadamard Gate</b>
+                        <br><br>
+                        Maps basis states to their corresponding superposition and back.
+                        <br><br>As matrix:
+
+                        <table> <!-- matrix sqrt(1/2)[[1, 1], [1, -1]]-->
+
+                            <tr><td>√½</td><td>√½</td></tr>
+
+                            <tr><td>√½</td><td>-√½</td></tr>
+
+                        </table>
+
+                    </description>
+                
+                </gate> 
+                
+                <gate id="s">
+                    
+                    S
+                
+                    <description>
+
+                        <b>S Gate</b>
+                        <br><br>
+                        Quarter turn around the z-axis. Equal to √Z.
+                        <br><br>As matrix:
+                        
+                        <table> <!-- matrix [[1, 0], [0, i]]-->
+
+                            <tr><td>1</td><td>0</td></tr>
+
+                            <tr><td>0</td><td>i</td></tr>
+
+                        </table>
+
+                    </description>
+                
+                </gate> 
+                
+                <gate id="t">
+                    
+                    T
+                
+                    <description>
+
+                        <b>T Gate</b>
+                        <br><br>
+                        Eighth turn around the z-axis. Equal to ∜Z.
+                        <br><br>As matrix:
+
+                        <table> <!-- matrix [[1, 0], [0, e^(iπ/4)]]-->
+
+                            <tr><td>1</td><td>0</td></tr>
+
+                            <tr><td>0</td><td>e<sup>iπ/4</sup></td></tr>
+
+                        </table>
+
+                    </description>
+                
+                </gate> 
+
+                <gate id="powered-x"> 
+
+                    X<sup>***</sup> <!-- this superscript is hidden under the exponent input box and only aligns the X to the left-->
+
+                    <input class="power"></input>
+
+                    <description>
+
+                        <b>Exponential X Gate</b>
+                        <br><br>
+                        Raises Pauli X to the given power. 
+                        <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/
+
+                    </description>
+
+                </gate>
+                
+                <gate id="powered-y">  
+
+                    Y<sup>***</sup> <!-- same here -->
+
+                    <input class="power"></input>
+
+                    <description>
+
+                        <b>Exponential Y Gate</b>
+                        <br><br>
+                        Raises Pauli Y to the given power. 
+                        <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/
+
+                    </description>
+
+                </gate>
+                
+                <gate id="powered-z"> 
+                    
+                    Z<sup>'**</sup> <!-- same here -->
+
+                    <input class="power"></input>
+
+                    <description>
+
+                        <b>Exponential Z Gate</b>
+                        <br><br>
+                        Also known as the global Phase Gate. Raises Pauli Z to the given power. 
+                        <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/
+                        <br><br>As matrix:
+
+                        <table> <!-- matrix [[1, 0], [0, e^(iφ)]]-->
+
+                            <tr><td>1</td><td>0</td></tr>
+
+                            <tr><td>0</td><td>e<sup>iφ</sup></td></tr>
+
+                        </table>
+
+                    </description>
+
+                </gate>
+
+                <gate id="inertia" class="inertia"> <!-- typically hidden unless otherwise specified -->
+                    
+                    I
+                
+                    <description>
+
+                        <b>Inertia Gate</b>
+                        <br><br>
+                        The identity gate. Leaves the qubit state as is.
+                        Not interactable!
+                        <br><br>As matrix:
+                        
+                        <table> <!-- matrix [[1, 0], [0, 1]]-->
+
+                            <tr><td>1</td><td>0</td></tr>
+
+                            <tr><td>0</td><td>1</td></tr>
+
+                        </table>
+
+                    </description>
+                
+                </gate>
+
+            </panel>
+
+            <label>Custom</label>
+            
+            <panel class="gates custom" id="custom-gates-panel"> <!-- runtime user-created gates -->
+
+                <button class="add-custom">+</button>         
+
+                <gate id="template-custom" style="display: none;">CG</gate> <!-- gate template for simpler creation -->
+
+                <gate id="supp" style="display: none;"></gate> <!-- support gate template for simpler creation -->
+
+            </panel>
+
+            <stretchy-container> <!-- fills the rest of the toolbox -->
+
+                <container-row>
+        
+                    <button id="settings" class="large" style="z-index: 1" title="Open settings...">
+                    
+                        <span>&#9881;</span>
+                    
+                    </button>
+        
+                </container-row>
+
+
+                <container-row style="display: none;">
+
+                    <panel id="settings-panel" class="settings">
+
+                        <widget id="theme" class="clickable">
+
+                            <span>Theme: Dark</span>
+            
+                        </widget>
+
+                        <widget id="hidden-inertias" class="clickable">
+
+                            <span>Inertias: Hidden</span>
+
+                        </widget>
+
+                        <widget id="show-tooltips" class="clickable">
+
+                            <span>Show tooltips: Yes</span>
+
+                        </widget>
+
+                        <widget id="imaginary-unit" class="clickable">
+
+                            <span>Imaginary unit: i</span>
+
+                        </widget>
+
+                    </panel>
+
+                </container-row>
+
+                <container-row>
+
+                    <button id="undo" class="small">
+                        
+                        <span>&#10226;</span>
+                    
+                    </button>
+        
+                    <button id="redo" class="small">
+                    
+                        <span>&#10227;</span>
+                    
+                    </button>
+        
+                </container-row>
+        
+                <container-row>
+        
+                    <button id="clear" class="large">
+                        
+                        <span>&#10000;</span>
+                    
+                    </button>
+        
+                </container-row>
+
+            </stretchy-container>
+
+            <version-label>v1.0.0</version-label>
+
+        </toolbox>
+
+        <sidebar>
+
+            <button id="counts" class="output-option">
+                <!-- manually create bar graph icon so it follows the current theme -->
+                <bar>▃</bar>
+
+                <bar>▃</bar>
+
+                <bar>▃</bar>
+
+            </button>
+
+            <button id="amplitudes" class="output-option">
+                <!-- this is colored so it doesnt need to follow the theme -->
+                <img src="media/amps.png" alt="Amps" draggable="false">
+
+            </button>
+
+            <button id="unitary" class="output-option">
+                
+                <matrix>[⋱]</matrix>
+
+            </button>
+
+            <button id="phases" class="output-option">
+                <!-- also colored -->
+                <img src="media/phase.png" alt="Phase" draggable="false">
+
+            </button>
+
+            <button id="code" class="output-option">&lt;/&gt;</button>
+            
+        </sidebar>
+
+        <!-- any panel appears behind the sidebar from right to left. Since the sidebar doesnt cover the rightmost edge, 
+             the panel would be visible as it slides in-place. This column is between the rightmost edge and the sidebar,
+             with the same color as the wallpaper, effectively hiding the panel as it moves. -->
+        <padding-column></padding-column>
+
+        <output-panel id="counts-panel">
+
+            <label>Counts</label>
+
+            <panel class="plot-screen"></panel>
+
+            <panel class="raw-screen">
+
+                <span></span>
+
+                <button class="clipboard" title="Copy to clipboard.">📋</button>
+
+            </panel>
+
+        </output-panel>
+
+        <output-panel id="amplitudes-panel">
+
+            <label>Statevector</label>
+
+            <panel class="plot-screen"></panel>
+
+            <panel class="raw-screen">
+
+                <span></span>
+
+                <button class="clipboard" title="Copy to clipboard.">📋</button>
+
+            </panel>
+
+        </output-panel>
+
+        <toolbar>
+
+            <widget id="qubits-counter">
+                
+                <span>Qubits:</span>
+            
+            </widget>
+
+            <widget id="gates-counter">
+                
+                <span>Gates:</span>
+            
+            </widget>
+
+            <widget id="steps-counter">
+                
+                <span>Steps:</span>
+            
+            </widget>
+
+            <widget id="shots" class="clickable">
+
+                <span>Shots:</span>
+
+                <input class="big" type="number" min="1">
+
+                <description>
+
+                    The amount of times to repeat this experiment
+                    during counts calculation.
+                    <br><br>
+                    Double-click to set a new amount.
+
+                </description>
+
+            </widget>
+
+            <widget id="order" class="clickable">
+                
+                <span>Order:</span>
+            
+            </widget>
+
+            <widget id="starting-qubits" class="clickable">
+
+                <span>Min Qubits: </span>
+
+                <input class="small" type="number" min="1">
+
+                <description>
+
+                    The minimum number of qubits this circuit will have,
+                    whether they are empty or not.
+                    <br><br>
+                    Double-click to set a new amount.
+
+                </description>
+
+            </widget>
+
+            <widget id="devtool" style="width: 200px; display: none;"> <!-- this exists for development purposes only, ignore -->
+
+                <span></span>
+
+            </widget>
+
+        </toolbar>
+
+        <tab-ribbon>
+
+            <button id="template-tab" class="tab" style="display: none;"> <!-- tab template for simpler creation -->
+
+                <input type="text" placeholder="Circuit 1">
+
+                <delete-tab title="Close tab">&times;</delete-tab>
+
+            </button>
+
+            <button id="include-tab" class="add-tab" title="Open a new tab (CTRL + Q)">+</button>
+
+        </tab-ribbon>
+
+        <circuit-canvas>
+
+            <timeline title="Coming soon!">
+
+                <row></row>
+
+                <label>Time (nsec)</label>
+
+            </timeline>
+
+            <!-- qubit template for simpler creation, but also its invisible existence in the DOM helps,
+                 as it procs overflow sooner than otherwise expected, allowing the user more room to spawn
+                 new qubits and place gates. -->
+            <qubit id="template-qubit" style="visibility: hidden;">
+
+                <button class="delete-qubit">&times;</button>
+                
+                <state>0</state>
+
+                <wire></wire>
+
+                <state>
+
+                    <input>
+
+                </state>
+
+            </qubit>
+
+        </circuit-canvas>
+
+        <aura id="gatebuilder-aura"> <!-- this envelops the entire interface, prohibiting interaction with the circuit while creation takes place -->
+
+            <gatebuilder>
+
+                <label>Create new gate...</label>
+
+                <button class="close" id="close-gatebuilder">&times;</button>
+
+                <input id="symbol" placeholder="Symbol goes here...">
+
+                <input id="title" placeholder="Title goes here...">
+
+                <textarea id="desc" placeholder="Quick description of the gate's function or nature goes here... (Optional)"></textarea>
+
+                <button class="create" id="create-gate">Create</button>
+
+            </gatebuilder>
+
+        </aura>
+
+        <script type="module" src="out/index.min.js"></script>
+        
+    </body>
+
+</html>

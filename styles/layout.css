@@ -1,0 +1,820 @@
+@import 'utilities.css';
+
+/*
+    LAYOUT.CSS
+    
+    This module defines elements and classes that are specific to this project
+    and appear once or limited times. General or recycleable content belong in
+    `utilities.css`.
+*/
+
+/* vvvv toolbox related content vvvv */
+
+toolbox {
+    height: auto;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--background-color);
+    border-radius:    var(--element-radius);
+    width:            var(--toolbox-width);
+    top:              var(--margin);
+    bottom:           var(--margin);
+    left:             var(--margin);
+    box-shadow:       var(--element-shadow);
+}
+
+    toolbox label {
+        position: relative;
+        user-select: none;
+        font-size: 22px;
+        color:         var(--text-color);
+        margin-top:    var(--margin);
+        margin-left:   var(--margin);
+        margin-bottom: calc(var(--margin) / 3);
+    }
+
+    toolbox button.add-custom {
+        background-color: transparent;
+        position: relative;
+        display: inline-flex;
+        cursor: pointer;
+        font-size: 27px;
+        opacity: 0.7;
+        border: 2px solid var(--text-color);
+        border-radius:    var(--element-radius);
+        color:            var(--text-color);
+        width:            var(--gate-side);
+        height:           var(--gate-side);
+        margin:           var(--margin) calc(var(--margin) / 2);
+    }
+
+        toolbox button.add-custom:hover {
+            background-color: transparent;
+            opacity: 1;
+            transform: 0.2s;
+            border: 2px solid var(--text-color);
+        }
+
+        toolbox button.add-custom[disabled] {
+            color:            var(--error-color);
+            border: 2px solid var(--error-color);
+        }
+
+gate {
+    display: inline-flex;
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    vertical-align: top;
+    font-family: 'Times New Roman', Times, serif;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-size: 22px;
+    z-index: 1;
+    color:            var(--text-color);
+    background-color: var(--background-color);
+    border: 1px solid var(--text-color);
+    width:            var(--gate-side);
+    height:           var(--gate-side);
+    margin:           var(--margin) calc(var(--margin) / 2);
+}
+
+    gate.inertia {
+        display: none;
+        cursor: not-allowed;
+    }
+
+    gate.errored {
+        background-color: var(--background-color) !important;
+    }
+
+        gate.errored:hover {
+            background-color: var(--standard-green) !important;
+        }
+
+    gate:hover {
+        border: 1px solid var(--text-color);
+        background-color: var(--standard-green);
+    }
+
+        gate.textured:hover {
+            border: 1px solid var(--text-color) !important;
+            background-color: var(--standard-green) !important;
+        }
+
+    gate sup {
+        vertical-align: super;
+        font-size: 12px;
+    }
+
+    gate span {
+        position: absolute;
+        display: block;
+        white-space: nowrap;
+        width: 100%;
+        height: 100%;
+    }
+        
+        gate span.arc {
+            font-size: 30px;
+            left: 28%;
+            top: 20%;
+            transform: scale(1.6, 1.5);
+        }
+
+        gate span.arrow {
+            overflow: hidden;
+            font-size: 40px;
+            height: 95%;
+            left: 26%;
+            top: -20%;
+        }
+
+            gate span.arrow.tilted-left {
+                height: 80%;
+                rotate: 45deg;
+                top: 5%;
+                left: 50%;
+            }
+
+            gate span.arrow.tilted-right {
+                height: 80%;
+                rotate: -45deg;
+                left: -10%;
+                top: -30%;
+            }
+
+        gate span.target {
+            font-size: 30px;
+            left: calc(var(--margin) / 3);
+            color: var(--text-color);
+        }
+
+        gate span.background {
+            font-size: 30px;
+            top: -5%;
+            left: 16%;
+            color: var(--background-color);
+        }
+
+        gate span.ket {
+            display: none;
+            width: 45%;
+            height: 40%;
+            font-size: 20px;
+            bottom: 15%;
+            left: 27%;
+        }
+
+            gate span.ket::before {
+                content: '|';
+            }
+
+            gate span.ket::after {
+                content: '⟩';
+            }
+        
+        gate span.control-back {
+            font-size: 40px;
+            left: 32%;
+            top: -10%;
+            color: var(--background-color);
+        }
+
+        gate span.control-front {
+            font-size: 40px;
+            left: 32%;
+            top: -10%;
+            color: var(--text-color);
+        }
+
+        gate span.label {
+            align-content: center;
+            text-align: center;
+        }
+    
+    gate img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    gate .power {
+        position: absolute;
+        box-sizing: border-box;
+        pointer-events: none;
+        top: 7px;
+        right: 1px;
+        width: 20px;
+        height: 15px;
+        font-size: 8px; 
+        border: 1px solid var(--text-color);
+        background-color: var(--standard-green);
+    }
+
+/* ^^^^ toolbox related content ^^^^ */
+
+/* vvvv sidebar related content vvvv */
+
+sidebar {
+    height: auto;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 4;
+    background-color: var(--background-color);
+    border-radius:    var(--element-radius);
+    top:              var(--margin);
+    bottom:           var(--margin);
+    right:            var(--margin);
+    width:            var(--sidebar-width);
+    box-shadow:       var(--element-shadow);
+    gap:              calc(2 * var(--margin));
+    padding-top:      calc(25% - 3.5 * var(--sidebar-width));
+}
+
+    sidebar button.output-option {
+        position: relative;
+        display: inline-flex;
+        justify-content: space-evenly;
+        margin:      calc(var(--margin) / 1.5);
+        min-width:   calc(var(--sidebar-width) - 4 * var(--margin) / 3);
+        min-height:  calc(var(--sidebar-width) - 4 * var(--margin) / 3);
+    }
+
+padding-column {
+    position: absolute;
+    display: flex;
+    right: 0;
+    height: 100%;
+    z-index: 3;
+    width:            var(--margin);
+    background-color: var(--wallpaper-color);
+}
+
+output-panel {
+    height: auto;
+    position: absolute;
+    flex-direction: column;
+    z-index: 2;
+    opacity: 0;
+    right: -40%;
+    top:              calc(1.1 * var(--margin));
+    bottom:           calc(1.1 * var(--margin));
+    width:            var(--output-panel-width);
+    background-color: var(--background-color);
+    border-radius:    var(--element-radius);
+    box-shadow:       var(--element-shadow);
+    transition:       opacity 200ms cubic-bezier(0.25, 0.8, 0.5, 1), right 200ms cubic-bezier(0.25, 0.8, 0.5, 1);
+}
+
+    output-panel.slide-in {
+        display: flex;
+        opacity: 1;
+        right: calc(0.7 * var(--margin) + var(--sidebar-width));
+    }
+
+    output-panel.slide-out {
+        opacity: 0;
+        right: -40%;
+    }
+
+    output-panel label {
+        display: flex;
+        font-family: Arial, Helvetica, sans-serif;
+        align-items: center;
+        justify-content: right;
+        direction: ltr;
+        font-size: 22px;
+        min-width:     var(--output-screens-min-width);
+        width:         calc(0.85 * var(--output-panel-width));
+        height:        var(--output-screen-height);
+        color:         var(--text-color);
+        margin-top:    calc(var(--margin) / 2);
+        margin-left:   calc(0.08 * var(--output-panel-width));
+        margin-right:  calc(0.12 * var(--output-panel-width));
+    }
+
+    output-panel button.clipboard {
+        position: absolute;
+        font-size: 17px;
+        filter:           grayscale(100%);
+        background-color: var(--background-color);
+        top:              calc(var(--margin) / 3);
+        right:            calc(var(--margin) / 3);
+        max-width:        var(--output-screens-min-width);
+        max-height:       var(--output-screens-min-width);
+        width:            calc(0.75 * var(--output-screen-height));
+        height:           calc(0.75 * var(--output-screen-height));
+    }
+
+        button.clipboard:hover {
+            background-color: var(--standard-green);
+        }
+
+    copy-confirm {
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 50px;
+        height: 10px;
+        z-index: 10;
+        font-size: 15px;
+        animation: fade-out 1s ease-out;
+        border-radius:    var(--element-radius);
+        background-color: var(--border-color);
+        color:            var(--text-color);
+        padding:          calc(var(--margin) / 3);
+    }
+
+        @keyframes fade-out { /* start disappearing */
+            to { 
+                opacity: 0;
+            }
+        }
+    
+    output-panel panel {
+        position: relative;
+        display: flex;
+        height: fit-content;
+        min-height: 20px !important;
+        width:  calc(0.85 * var(--output-panel-width));
+        margin: var(--margin) auto;
+        color:  var(--text-color);
+    }
+    
+    output-panel panel.plot-screen {
+        overflow-x: hidden;
+    }
+
+    output-panel panel.raw-screen {
+        font-family: Arial, Helvetica, sans-serif;
+        box-sizing: border-box;
+        overflow-x: hidden;
+        padding: var(--margin);
+    }
+
+    output-panel panel.code-screen { /* TODO: probably rework */
+        position: relative;
+        display: flex;
+        overflow: auto;
+        flex-grow: 1;
+        margin: 0 auto;
+        min-width:  var(--output-screens-min-width);
+        min-height: var(--output-screens-min-width);
+        width:      calc(0.85 * var(--output-panel-width));
+    }
+
+/* ^^^^ sidebar related content ^^^^ */
+
+/* vvvv toolbar related content vvvv */
+
+toolbar {
+    width: auto;
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    z-index: 1;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    border-radius:    var(--element-radius);
+    height:           var(--toolbar-width);
+    bottom:           var(--margin);
+    left:             calc(var(--toolbox-width) + 2 * var(--margin));
+    right:            calc(var(--sidebar-width) + 2 * var(--margin));
+}
+
+widget {
+    position: relative;
+    height: auto;
+    display: inline-block;
+    cursor: default;
+    user-select: none;
+    white-space: nowrap;
+    border-radius: var(--element-radius);
+}
+
+    toolbar widget {
+        width: min-content;
+        min-width: var(--toolbar-widget-min-width);
+        margin:    calc(var(--margin) / 3);
+    }
+
+    panel widget {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        height: calc(2 * var(--margin));
+        width: calc(100% - 2 * var(--margin));
+        border: 1px solid var(--border-color);
+        margin:           var(--margin);
+    }
+
+    widget input {
+        position: relative;
+        font-size: 16px;
+        height: calc(100% - var(--margin) / 2.5);
+        margin-right: calc(0.5 * var(--margin));
+    }
+
+        widget input.big {
+            width: 40%;
+        }
+
+        widget input.small {
+            width: 20%;
+        }
+
+    widget:hover {
+        transition: 0.2s;
+        background-color: var(--standard-green);
+    }
+
+    widget span {
+        color:        var(--text-color);
+        margin-left:  calc(var(--margin) / 3);
+        margin-right: calc(var(--margin) / 3);
+    }
+
+    widget.clickable {
+        cursor: pointer;
+    }
+
+/* ^^^^ toolbar related content ^^^^ */
+
+/* vvvv tab related content vvvv */
+
+tab-ribbon {
+    width: auto;
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: var(--element-radius);
+    height:        var(--tab-ribbon-height);
+    top:           var(--margin);
+    left:          calc(var(--toolbox-width) + 2 * var(--margin));
+    right:         calc(var(--sidebar-width) + 2 * var(--margin));
+}
+
+    tab-ribbon button.tab {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        animation: tab-slide-in 0.25s ease-out;
+        transition: 0s;
+        padding: 0 5px;
+        border: 1px solid var(--wallpaper-color);
+        min-width:        var(--tab-min-width);
+        width:            var(--tab-starting-width);
+        margin-right:     calc(var(--margin) / 2);
+        height:           var(--tab-ribbon-height);
+    }
+
+        @keyframes tab-slide-in { /* materialize the tab left2right */
+            from {
+                width: 0;       
+                min-width: 0;
+            }
+        }
+
+    button.tab.active {
+        background-color: var(--background-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .tab input {
+        padding: 5px;
+        font-size: 17px;
+        height: 50%;
+        width: calc(100% - 30px);
+    }
+    
+        .tab:hover input {
+            background-color: var(--standard-green);
+        }
+
+        .tab.active input {
+            background-color: var(--background-color);
+        }
+
+    tab-ribbon delete-tab {
+        border: none;
+        font-size: 20px;
+        height:        calc(0.6 * var(--tab-ribbon-height));
+        width:         calc(0.6 * var(--tab-ribbon-height));
+        border-radius: var(--element-radius);
+    }
+
+        delete-tab:hover {
+            background-color: var(--highlight-green);
+        }
+
+        .tab.active delete-tab:hover {
+            background-color: var(--border-color);
+        }
+
+    tab-ribbon button.add-tab {
+        border: none;
+        font-size: 27px;
+        transition: 0s;
+        color:      var(--text-color);
+        min-width:  var(--tab-ribbon-height);
+        min-height: var(--tab-ribbon-height);
+    }
+
+/* ^^^^ tab related content ^^^^ */
+
+/* vvvv canvas related content vvvv */
+
+circuit-canvas {
+    width: auto;
+    height: auto;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    border-radius:    var(--element-radius);
+    padding:          var(--margin);
+    left:             calc(var(--toolbox-width) + 2 * var(--margin));
+    right:            calc(var(--sidebar-width) + 2 * var(--margin));
+    bottom:           calc(var(--toolbar-width) + 2 * var(--margin));
+    top:              calc(var(--tab-ribbon-height) + 2 * var(--margin));
+}
+
+qubit {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    border: 2px solid var(--background-color);
+    border-radius: var(--element-radius);
+    min-height:    calc(var(--gate-side) + var(--margin));
+}
+
+    qubit:hover {
+        border: 2px solid var(--standard-green);
+    }
+
+    qubit:first-of-type { /* so as not to clip under the timeline */
+        margin-top: 100px;
+    }
+
+    qubit .delete-qubit {
+        position: relative;
+        text-align: center;
+        background-color: transparent;
+        color: transparent;
+        border: none;
+        user-select: none;
+        font-size: 16px;
+        height:        calc(0.4 * (var(--gate-side) + var(--margin)));
+        width:         calc(0.4 * (var(--gate-side) + var(--margin)));
+        border-radius: var(--element-radius);
+        margin-left:   calc(var(--margin) / 3);
+    }
+
+    qubit .delete-qubit:hover {
+        border: none;
+        transition: 0.2s;
+        color:            var(--text-color);
+        background-color: var(--error-color);
+    }
+
+    qubit:hover .delete-qubit {
+        color: var(--text-color);
+    }
+
+    qubit state {
+        position: relative;
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        font-family: 'Courier New', Courier, monospace;
+        max-width: fit-content;
+        user-select: none;
+        z-index: 1;
+        font-size: 24px;
+        padding: 6px 5px;
+        color:         var(--text-color);
+        border-radius: var(--element-radius);
+    }
+    
+        qubit state::before { /* left part of the ket symbol */
+            content: "";
+            display: block;
+            width: 2px;
+            height: 1em;
+            background-color: var(--text-color);
+            margin-right:     calc(var(--margin) / 6);
+        }
+        
+        qubit state::after { /* right part of the ket symbol */
+            content: "";
+            display: block;
+            width: 14px;
+            height: 14px;
+            rotate: -45deg; /* simulate the ket angle as a right angle rotated 45 degrees cw */
+            border-right:  2px solid var(--text-color); 
+            border-bottom: 2px solid var(--text-color); 
+            margin-left: calc(-1 * var(--margin) / 3);
+        }  
+        
+        qubit state:hover {
+            background-color: var(--standard-green);
+        }
+
+        qubit state:first-of-type { /* this affects the ket state */
+            margin-left: var(--margin);
+        }
+
+        qubit state:last-of-type { /* this affects the alias state */
+            margin-right: var(--margin);
+        }
+
+        qubit state input {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            width: 31px;
+            height: 70%;
+        }
+
+    qubit wire {
+        position: relative;
+        border: 2px solid var(--background-color);
+        border-left: none;
+        border-right: none;
+        height: 2px;
+        min-width:        calc(3 * var(--margin) + var(--gate-side));
+        background-color: var(--text-color);
+        margin:         0 calc(var(--margin) / -3);
+    }
+
+        qubit wire.classical {
+            border: 2px solid var(--text-color);
+            background-color: var(--background-color);
+        }
+
+timeline {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    padding: 10px 10px;
+    background-color: var(--wallpaper-color);
+    height:           var(--gate-side);
+    border-radius:    var(--element-radius);
+    max-height:       var(--gate-side);
+    min-width:        calc(4 * var(--gate-side) + 6 * var(--margin));
+    left:             calc(2 * var(--margin));
+    right:            calc(2 * var(--margin));
+    top:              calc(2 * var(--margin));
+}
+
+    timeline::before { /* start the timeline arrow with a vertical line */
+        content: "";
+        display: block;
+        width: 4px;
+        height: 25px;
+        background-color: var(--text-color);
+    }
+
+    timeline::after { /* end the timeline arrow with an arrowhead */
+        content: "";
+        position: relative;
+        display: block;
+        width: 14px;
+        height: 14px;
+        border-right:  4px solid var(--text-color); 
+        border-bottom: 4px solid var(--text-color); 
+        transform:               rotate(-45deg); /* simulate an arrowhead with a right angle rotated 45 degrees cw */
+        margin-left:             calc(-3.3 * var(--margin) / 3);
+    }
+
+    timeline row {
+        flex-grow: 1;
+        height: 4px;
+        background-color: var(--text-color);
+    }
+
+    timeline label {
+        position: absolute;
+        font-style: italic;
+        user-select: none;
+        top:   calc(0.5 * var(--margin));
+        right: calc(2 * var(--margin));
+        color: var(--text-color);
+    }
+
+/* ^^^^ canvas related content ^^^^ */
+
+/* vvvv gatebuilder related content vvvv */
+
+gatebuilder {
+    position: absolute;
+    z-index: 10;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    border-radius:    var(--element-radius);
+    width:            var(--gatebuilder-side);
+    height:           var(--gatebuilder-side);
+    box-shadow:       var(--element-shadow);
+}
+
+    @keyframes modal-appear { /* slide right2left from behind the sidebar */
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+    }
+
+    @keyframes modal-disappear { /* slide left2right to behind the sidebar */
+        to {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+    }
+
+    gatebuilder label {
+        font-family: Arial, Helvetica, sans-serif;
+        user-select: none;
+        position: absolute;
+        font-size: 17px;
+        top:    calc(var(--margin) / 2);
+        left:   calc(var(--margin) / 2);
+        color:  var(--text-color);
+    }
+
+    gatebuilder button.close {
+        position: absolute;
+        border: none;
+        width: 10%;
+        height: 10%;
+        top: 0;
+        right: 0;
+        font-size: 20px;
+        border-radius:  0 var(--element-radius) 0 0;
+        background-color: var(--background-color);
+    }
+
+        gatebuilder button.close:hover {
+            background-color: var(--error-color);
+            border: none;
+        }
+
+    gatebuilder input {
+        position: relative;
+        pointer-events: auto;
+        font-size: 15px;
+        width: 40%;
+        border: 1px solid var(--border-color);
+        background-color: var(--wallpaper-color);
+        margin:           var(--margin) 50% var(--margin) var(--margin);
+    }
+
+        gatebuilder input::placeholder { 
+            opacity: 0.6;
+        }
+
+        gatebuilder input:-ms-input-placeholder { /* browser-safe implementation (apparently) */
+            opacity: 0.6;
+        }
+
+        gatebuilder input:first-of-type {
+            margin-top: calc(5 * var(--margin));
+        }
+
+    gatebuilder textarea {
+        resize: vertical;
+        position: absolute;
+        overflow-y: auto;
+        font-size: 15px;
+        width: 40%;
+        min-height: 72.5%; /* fixed height at 72.5% of the parent container */
+        max-height: 72.5%;
+        top:   calc(5 * var(--margin));
+        right: var(--margin);
+    }
+
+    gatebuilder button.create {
+        position: absolute;
+        font-size: 16px;
+        width: 40%;
+        height: 12%;
+        left:   var(--margin);
+        bottom: var(--margin);
+    }
+
+/* ^^^^ gatebuilder related content ^^^^ */

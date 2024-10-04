@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "module": "ESNext",
+        "strict": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "outDir": "./out",
+        "typeRoots": [
+            "./node_modules/@types",
+            "./@types" 
+        ]
+    },
+    "include": ["src/**/*"]
+}
+  
