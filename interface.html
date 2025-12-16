@@ -12,7 +12,7 @@
 
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- load jquery -->
         
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!-- load plotly -->
+        <script src="https://cdn.plot.ly/plotly-3.3.0.min.js"></script> <!-- load plotly -->
 
         <link rel="stylesheet" type="text/css" href="styles/layout.css">
 
@@ -21,6 +21,9 @@
     </head>
 
     <body class="dark-theme"> <!-- start with black theme as default (probably what's wanted) -->
+
+        <!-- hidden div to act as a page saver -->
+        <div id="save-page", style="display: none;"></div>
 
         <toolbox>
 
@@ -236,59 +239,74 @@
                 
                 </gate> 
 
-                <gate id="powered-x"> 
+                <gate id="rx"> 
 
-                    X<sup>***</sup> <!-- this superscript is hidden under the exponent input box and only aligns the X to the left-->
-
-                    <input class="power"></input>
+                    <sup>R</sup><sub>X</sub> &zwnj; &zwnj; &zwnj; &zwnj; &zwnj; <!-- invisible padding to align text with box -->
+                    <input class="rotangle"></input>
 
                     <description>
 
-                        <b>Exponential X Gate</b>
+                        <b>Rotational X Gate</b>
                         <br><br>
-                        Raises Pauli X to the given power. 
-                        <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/
+                        Turns the state vector around the x-axis by a given angle θ. 
+                        <!-- <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/ -->
+                        <br><br>As matrix:
+                        <table> <!-- matrix [[cosθ/2, -isinθ/2], [-isinθ/2, cosθ/2]] -->
+
+                            <tr><td>cs(θ/2)</td><td>-isn(θ/2)</td></tr>
+
+                            <tr><td>-isn(θ/2)</td><td>cs(θ/2)</td></tr>
+
+                        </table>
 
                     </description>
 
                 </gate>
                 
-                <gate id="powered-y">  
+                <gate id="ry">  
 
-                    Y<sup>***</sup> <!-- same here -->
+                    <sup>R</sup><sub>Y</sub> &zwnj; &zwnj; &zwnj; &zwnj; &zwnj; <!-- same here -->
 
-                    <input class="power"></input>
+                    <input class="rotangle"></input>
 
                     <description>
 
-                        <b>Exponential Y Gate</b>
+                        <b>Rotational Y Gate</b>
                         <br><br>
-                        Raises Pauli Y to the given power. 
-                        <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/
+                        Turns the state vector around the y-axis by a given angle θ. 
+                        <!-- <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/ -->
+                        <br><br>As matrix:
+                        <table> <!-- matrix [[cosθ/2, -sinθ/2], [sinθ/2, cosθ/2]] -->
+
+                            <tr><td>cs(θ/2)</td><td>-sn(θ/2)</td></tr> <!-- todo: this cs(.) sn(.) hack needs work, shortened due to i conflicting with the imaginary -->
+
+                            <tr><td>sn(θ/2)</td><td>cs(θ/2)</td></tr>
+
+                        </table>
 
                     </description>
 
                 </gate>
                 
-                <gate id="powered-z"> 
+                <gate id="rz"> 
                     
-                    Z<sup>'**</sup> <!-- same here -->
+                    <sup>R</sup><sub>Z</sub> &zwnj; &zwnj; &zwnj; &zwnj; &zwnj; <!-- same here -->
 
-                    <input class="power"></input>
+                    <input class="rotangle"></input>
 
                     <description>
 
-                        <b>Exponential Z Gate</b>
+                        <b>Rotational Z Gate</b>
                         <br><br>
-                        Also known as the global Phase Gate. Raises Pauli Z to the given power. 
-                        <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/
+                        Turns the state vector around the z-axis by a given angle θ.
+                        <!-- <br>Supported operations: +&nbsp;-&nbsp;*&nbsp;/ -->
                         <br><br>As matrix:
 
-                        <table> <!-- matrix [[1, 0], [0, e^(iφ)]]-->
+                        <table> <!-- matrix [[e^(-iθ/2), 0], [0, e^(iθ/2)]] -->
 
-                            <tr><td>1</td><td>0</td></tr>
+                            <tr><td>e<sup>-iθ/2</sup></td><td>0</td></tr>
 
-                            <tr><td>0</td><td>e<sup>iφ</sup></td></tr>
+                            <tr><td>0</td><td>e<sup>iθ/2</sup></td></tr>
 
                         </table>
 
@@ -333,6 +351,22 @@
                 <gate id="supp" style="display: none;"></gate> <!-- support gate template for simpler creation -->
 
             </panel>
+
+            <label>Backend</label>
+
+            <select id="backend">
+                
+                <option value="qole">QOLE</option>
+
+                <option value="qiskit-aer">Qiskit-Aer</option>
+
+                <!-- <option id="ibm-sherbrooke">IBM-Sherbrooke (online)</option>
+
+                <option id="ibm-brisbane">IBM-Brisbane (online)</option>
+
+                <option id="ibm-kyiv">IBM-Kyiv (online)</option> -->
+                
+            </select>
 
             <stretchy-container> <!-- fills the rest of the toolbox -->
 
@@ -407,41 +441,41 @@
 
             </stretchy-container>
 
-            <version-label>v1.0.1</version-label>
+            <version-label>v1.1.0</version-label>
 
         </toolbox>
 
         <sidebar>
 
-            <button id="counts" class="output-option">
-                <!-- manually create bar graph icon so it follows the current theme -->
-                <bar>▃</bar>
-
-                <bar>▃</bar>
-
-                <bar>▃</bar>
-
-            </button>
-
             <button id="amplitudes" class="output-option">
-                <!-- this is colored so it doesnt need to follow the theme -->
+
                 <img src="media/amps.png" alt="Amps" draggable="false">
 
             </button>
 
-            <button id="unitary" class="output-option">
+            <button id="counts" class="output-option">
+
+                <img src="media/counts.png" alt="Counts" draggable="false">
+
+            </button>
+
+            <!-- <button id="unitary" class="output-option">
                 
-                <matrix>[⋱]</matrix>
+                <img src="media/unitary.png" alt="Unitary MX" draggable="false">
 
             </button>
 
             <button id="phases" class="output-option">
-                <!-- also colored -->
+
                 <img src="media/phase.png" alt="Phase" draggable="false">
 
             </button>
 
-            <button id="code" class="output-option">&lt;/&gt;</button>
+            <button id="code" class="output-option">
+
+                <img src="media/code.png" alt="Code" draggable="false">
+
+            </button> -->
             
         </sidebar>
 
@@ -566,11 +600,12 @@
 
         <circuit-canvas>
 
-            <timeline title="Coming soon!">
+            <timeline title="Time evolution of qubit states">
 
                 <row></row>
 
-                <label>Time (nsec)</label>
+                <!-- <label>Time (nsec)</label> -->
+                <label>Time</label>
 
             </timeline>
 

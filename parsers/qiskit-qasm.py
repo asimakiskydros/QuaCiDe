@@ -1,5 +1,5 @@
 from qiskit import QuantumCircuit, transpile
-from qiskit.circuit.library import XGate, YGate, ZGate, HGate, SGate, TGate
+from qiskit.circuit.library import XGate, YGate, ZGate, HGate, SGate, TGate, RXGate, RYGate, RZGate
 from qiskit_aer import QasmSimulator, StatevectorSimulator
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
@@ -8,7 +8,8 @@ import numpy as np
 import json
 
 DELIMITER = '<!@DELIMITER>' 
-DEFAULTS  = { 'x': XGate, 'y': YGate, 'z': ZGate, 'h': HGate, 's': SGate, 't': TGate }
+DEFAULTS  = { 'x': XGate, 'y': YGate, 'z': ZGate, 'h': HGate, 's': SGate, 't': TGate, }
+ANGLED    = { 'rx': RXGate, 'ry': RYGate, 'rz': RZGate, }
 CUSTOMS   = {}
 POSTSELECTIONS = {}
 
@@ -96,10 +97,10 @@ def build (template: dict, circuit: QuantumCircuit = None):
         for i, stamp in enumerate(gates):
             if stamp in DEFAULTS:
                 step.append(DEFAULTS[stamp](), [i])
-            if stamp.startswith('powered-'):
-                kind, repr = stamp.split('powered-')[1].split(DELIMITER)
-                power = float(sympify(repr).evalf())  # evaluate the exponent
-                step.append(DEFAULTS[kind]().power(power), [i])
+            if stamp in ANGLED:
+                _, angle = stamp.split(DELIMITER)
+                # power = float(sympify(angle).evalf())  # evaluate the exponent TODO: might remove if i decide to only allow numbers in the angle text
+                step.append(ANGLED[stamp](angle), [i])
             if stamp == 'swap':
                 swaps.append(i)
             if stamp in CUSTOMS:                 # jump as many qubits as this gate spans

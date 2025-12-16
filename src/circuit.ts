@@ -120,6 +120,9 @@ export class Circuit {
         (which === 'next' ? this.undoStack : this.redoStack).push(new Template(this, { stacks: false, }));
         template.applyTo(this);
 
+        // save new page instance
+        $('#save-page').trigger('click');
+
         return true;
     }
 
@@ -564,5 +567,8 @@ export class Circuit {
         this.extend();
         this.updateToolbarWidgets();
         this.updateOrder();
+
+        // save new page instance
+        $('#save-page').trigger('click');
     }
 }

@@ -40,7 +40,7 @@ toolbox {
         position: relative;
         display: inline-flex;
         cursor: pointer;
-        font-size: 27px;
+        font-size: 25px;
         opacity: 0.7;
         border: 2px solid var(--text-color);
         border-radius:    var(--element-radius);
@@ -79,7 +79,7 @@ gate {
     border: 1px solid var(--text-color);
     width:            var(--gate-side);
     height:           var(--gate-side);
-    margin:           var(--margin) calc(var(--margin) / 2);
+    margin:           var(--margin) calc(var(--margin) * 0.5);
 }
 
     gate.inertia {
@@ -105,9 +105,14 @@ gate {
             background-color: var(--standard-green) !important;
         }
 
+    gate sub {
+        position: relative;
+        top: 6px;
+        font-size: 10px;
+    }
+
     gate sup {
-        vertical-align: super;
-        font-size: 12px;
+        font-size: 17px;
     }
 
     gate span {
@@ -201,15 +206,15 @@ gate {
         max-height: 100%;
     }
 
-    gate .power {
+    gate .rotangle {
         position: absolute;
         box-sizing: border-box;
         pointer-events: none;
-        top: 7px;
-        right: 1px;
         width: 20px;
-        height: 15px;
-        font-size: 8px; 
+        height: 17px;
+        font-size: 9px; 
+        right: 1px;
+        top:              calc(var(--gate-side) / 3);
         border: 1px solid var(--text-color);
         background-color: var(--standard-green);
     }
@@ -223,7 +228,7 @@ sidebar {
     position: absolute;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     overflow-y: auto;
     overflow-x: hidden;
@@ -236,14 +241,15 @@ sidebar {
     width:            var(--sidebar-width);
     box-shadow:       var(--element-shadow);
     gap:              calc(2 * var(--margin));
-    padding-top:      calc(25% - 3.5 * var(--sidebar-width));
+    padding-top:      calc(10% - var(--sidebar-width));
+    padding-bottom:   calc(10% - var(--sidebar-width));
 }
 
     sidebar button.output-option {
         position: relative;
         display: inline-flex;
         justify-content: space-evenly;
-        margin:      calc(var(--margin) / 1.5);
+        margin:      calc(var(--margin));
         min-width:   calc(var(--sidebar-width) - 4 * var(--margin) / 3);
         min-height:  calc(var(--sidebar-width) - 4 * var(--margin) / 3);
     }

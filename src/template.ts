@@ -21,7 +21,13 @@ export class Template {
      * @param circuit The circuit instance to make a template for.
      * @param save What information to keep from this circuit (by default it saves everything).
      */
-    constructor (circuit: Circuit, save?: Options) {
+    constructor (circuit?: Circuit, save?: Options, collection?: Record<string, any>) {
+        if (collection) {
+            this.collection = collection;
+            return;
+        }
+        if (!circuit) throw new Error('Multiple undefined parameters in `Template` constructor (`circuit` and `collection`).');
+        
         this.collection = { length: circuit.qubits.length, };
 
         // save instance-wide information if requested

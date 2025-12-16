@@ -2,6 +2,10 @@ import { Qubit } from './qubit';
 import { Circuit } from './circuit';
 import { Template } from './template';
 import { Gate } from './gates';
+import { Tab } from './tab';
+
+
+export const DELIMITER: string = '<!@DELIMITER>';
 
 /**
  * Basic mathematical evaluator than replaces `eval` for simple
@@ -290,6 +294,67 @@ export function round (number: number, decimals = 0): number {
  * as the TS->JS transpilation currently doesn't allow logging to console...
  * @param text The text to log (it appears on a hidden widget in the toolbar).
  */
-export function devtoolPrint(text: string): void {
+export function devtoolPrint (text: string): void {
     $('#devtool').css('display', 'flex').find('span').text(text);
+}
+
+/**
+ * Creates and returns a custom gate based on the given description.
+ * @param circuit The current `Circuit` object.
+ * @param tabs The loaded `Tab`s list.
+ * @param customs The `Record` of created custom gates existing in memory.
+ * @param id A number identifier for the gate.
+ * @param symbol The label appearing ontop the gate sprite.
+ * @param title The title of the gate that appears on toolbox hover.
+ * @param desc The description of the gate that appears on toolbox hover.
+ * @param definition The JSONified circuit definition of the gate.
+ * @param tooltipsAllowed The tooltips setting flag.
+ * @returns A div representing the described custom gate.
+ */
+export function createCustomGate (
+    circuit: Circuit, tabs: Tab[], customs: Record<string, string>, id: number, symbol: string, title: string, desc: any, 
+    definition: string, span: number, tooltipsAllowed: boolean,
+) {
+    const prefixid = `cg${id}`;
+    const gate = $('#template-custom').clone()
+        .attr({
+            id: prefixid,
+            definition: definition, // save the whole current circuit instance as def
+            span: span, // it follows that it spans as many qubits as there are currently
+        })
+        .text(symbol || `CG${id}`) // if not given a symbol, fall back to default convention
+        .css('display', 'inline-flex')
+        .append($('<description></description>') // add given or default title and desc only if specified
+            .html(
+                `<b>${title}</b>
+                <br><br>${desc ? `${desc}<br><br>` : ''}
+                CTRL + Click to reconstruct its circuit definition.
+                <br><br>SHIFT + Click to delete.`))
+        .on('mousedown', function (e) { copy(this, e, circuit); }) // arm it with drag-and-drop behavior
+        .on('mouseenter', function () { showTooltip(tooltipsAllowed, this, 'left', 0, +10); }) // spawn tooltip on hover
+        .on('mouseleave', () => { if (tooltipsAllowed) $('tooltip').remove(); })
+        .on('click', function (e) { // on SHIFT + Click, remove this custom gate from the toolbox
+            if (e.button !== 0 || !e.shiftKey || e.ctrlKey || e.altKey) return;
+
+            // remove from custom saves
+            delete customs[prefixid];
+            // simply hide it from the DOM, as it might be used in previous templates
+            // TODO: this is probably not an amazing solution
+            $(this).trigger('mouseleave').css('display', 'none');
+        })
+        .on('click', function(e) { // on CTRL + Click, rebuild its circuit definition in a new tab
+            if (e.button !== 0 || e.shiftKey || !e.ctrlKey || e.altKey) return;
+
+            new Tab(tabs, circuit, new Template(undefined, undefined, JSON.parse(definition))).title = title;
+            // wipe carry-over stacks, this is supposed to be the initial state
+            circuit.undoStack = [];
+            circuit.redoStack = [];
+            circuit.toggleButtons();
+        });
+    // add in toolbox
+    $('#custom-gates-panel').append(gate);
+    // save gate in customs bucket
+    customs[prefixid] = [id, symbol, title, desc, definition, span].join(DELIMITER);
+    
+    return gate;
 }

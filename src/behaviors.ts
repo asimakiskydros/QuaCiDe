@@ -1,8 +1,10 @@
 import { Circuit } from './circuit';
-import { copy, devtoolPrint, payload, plot, showTooltip } from './functions';
+import { copy, createCustomGate, DELIMITER, devtoolPrint, payload, plot, showTooltip } from './functions';
 import { Qubit } from './qubit';
 import { Tab } from './tab';
 import { Template } from './template';
+
+const FORGET_AFTER = 12 * 60 * 60  * 1000; // 12 hours
 
 $(() => { // on DOMContentLoaded
     const last: Record<string, Template> = {};                       // record of the last instance calculated on each output so as to avoid recalculation 
@@ -10,18 +12,80 @@ $(() => { // on DOMContentLoaded
     const emptyTemplate = new Template(circuit, { stacks: false, }); // the empty circuit snapshot, useful for clearing quickly
     const initialSnapshot = new Template(circuit);                   // the initial snapshot, armed with empty undo/redo stacks, useful for tab initialization
     const tabs: Tab[] = [];                                          // the tab list; the tab ribbon
+    const customs: Record<string, string> = {};                      // custom gate descriptions list
     const SERVER_IP = 'http://127.0.0.1:5000';                       // the host 
     let tooltipsAllowed = true;                                      // settings flag for tooltips
     let createdGates = 0;
 
     /**
+     * On page reload, first check whether there exists a prior page save to fall back to.
+     */
+    const timestamp = localStorage.getItem('timestamp');
+    if (timestamp !== null)
+        if (Date.now() > FORGET_AFTER + Number(timestamp)) {
+            // exists but expired, discard and load the default start page
+            localStorage.removeItem('save');
+            localStorage.removeItem('timestamp');
+            $('#include-tab').trigger('click');
+        }
+        else {
+            // exists and eligible to reload
+            const save = JSON.parse(localStorage.getItem('save')!);
+            let active = 0;
+
+            // re-instate previously applied global settings
+            createdGates = save['createdgates'];
+            tooltipsAllowed = save['tooltips'];
+            $('#backend').val(save['backend']);
+
+            if ($('#theme').find('span').text() !== save['theme']) $('#theme').trigger('click');
+            if ($('#hidden-inertias').find('span').text() !== save['inertias']) $('#hidden-inertias').trigger('click');
+            if ($('#imaginary-unit').find('span').text() !== save['imagunit']) $('#imaginary-unit').trigger('click');
+
+            // revive all tabs
+            for (const [i, tab] of save['tabsaves'].entries()) {
+                const [title, hidden, snapshot] = tab.split(DELIMITER);
+                new Tab(tabs, circuit, new Template(undefined, undefined, JSON.parse(snapshot))).title=title;
+                if (hidden) active = i;
+            }
+            // focus on the previously active tab
+            tabs[active].tablink.trigger('click');
+
+            // revive all custom gates
+            for (const gate of save['customsaves']) {
+                const [id, symbol, title, desc, definition, span] = gate.split(DELIMITER);
+
+                createCustomGate(circuit, tabs, customs, id, symbol, title ,desc, definition, span, tooltipsAllowed);
+            }
+        }
+    else $('#include-tab').trigger('click')
+
+    /**
+     * On click, save all non-trivial page content (the selected backend, all vital tab information and all custom gate definitions)
+     */
+    $('#save-page')
+        .on('click', () => {
+            localStorage.setItem('timestamp', String(Date.now()));
+            localStorage.setItem('save', JSON.stringify({
+                createdGates: createdGates,
+                theme: $('#theme').find('span').text(),
+                inertias: $('#hidden-inertias').find('span').text(),
+                tooltips: tooltipsAllowed,
+                imagunit: $('#imaginary-unit').find('span').text(),
+                backend:     $('#backend').val(),
+                tabsaves:    Array.from(tabs, tab => tab.save()),
+                customsaves: Object.values(customs),
+            }));
+        });
+
+    /**
      * On click, spawn a fresh tab in the ribbon right before the include button.
      */
-    $('#include-tab')
-        // set up the event listener
-        .on('click', () => { new Tab(tabs, circuit, initialSnapshot); }) 
-        // then fire it immediately to spawn the initial tab
-        .trigger('click');
+    $('#include-tab').on('click', () => { 
+        new Tab(tabs, circuit, initialSnapshot); 
+        // save new page instance
+        $('#save-page').trigger('click');
+    }); 
     
     /**
      * On click, remove everything currently in the circuit and bring it back to
@@ -35,6 +99,8 @@ $(() => { // on DOMContentLoaded
             emptyTemplate.applyTo(circuit, { endianness: true, minQubits: true, }); 
             // save the previous snapshot
             circuit.save(snapshot);
+            // save new page instance
+            $('#save-page').trigger('click');
         });
 
     /**
@@ -89,6 +155,8 @@ $(() => { // on DOMContentLoaded
             // refresh the tooltip
             $('tooltip').remove();
             $(this).trigger('mouseenter');
+            // save new page instance
+            $('#save-page').trigger('click');
         })
         .on('mouseenter', function () { 
             showTooltip(tooltipsAllowed, this, 'bottom', -128, -210,
@@ -117,6 +185,8 @@ $(() => { // on DOMContentLoaded
             }
             // inform graphic of new mode
             $(this).find('span').text(`Theme: ${mode}`);
+            // save new page instance
+            $('#save-page').trigger('click');
         });
 
     /**
@@ -135,6 +205,9 @@ $(() => { // on DOMContentLoaded
             for (const qubit of circuit.qubits) qubit.shuffleState(undefined, 0);
             // update toolbox gate tooltips
             for (const matrix of $('table')) $(matrix).html($(matrix).html().replace(/[ij]/g, imag));
+
+            // save new page instance
+            $('#save-page').trigger('click');
         });
 
     /**
@@ -146,6 +219,8 @@ $(() => { // on DOMContentLoaded
 
             $('.inertia').css('display', hidden ? 'inline-flex' : 'none');
             $(this).find('span').text(`Inertias: ${hidden ? 'Visible' : 'Hidden'}`);
+            // save new page instance
+            $('#save-page').trigger('click');
         });
 
     /**
@@ -155,6 +230,8 @@ $(() => { // on DOMContentLoaded
         .on('click', function () {
             $(this).find('span').text(`Show tooltips: ${tooltipsAllowed ? 'No' : 'Yes'}`);
             tooltipsAllowed = !tooltipsAllowed;
+            // save new page instance
+            $('#save-page').trigger('click');
         })
 
     /**
@@ -178,10 +255,8 @@ $(() => { // on DOMContentLoaded
 
             // update the minQubits amount only if the given value is a positive integer
             if (Number.isInteger(value) && value > 0) circuit.minQubits = value;
-
             // refresh the circuit to account for the new amount of qubits
             circuit.refresh();
-
             // reset background
             $(this).css('background-color', 'transparent');
         });
@@ -291,52 +366,20 @@ $(() => { // on DOMContentLoaded
      * that represents the current circuit as a draggable `Gate`.
      */
     $('#create-gate')
-        .on('click', () => {
-            createdGates++;
-
-            const desc = $('#desc').val();
-            const title = ($('#title').val() as string).trim()  || `Custom Gate #${createdGates}`; 
-            const symbol = ($('#symbol').val() as string).trim();
-            const def = new Template(circuit, {
-                minQubits: false, states: false,
-                aliases: false, colors: false, stacks: false
-            });
-
-            $('#custom-gates-panel').append(
-                $('#template-custom').clone()
-                .attr({
-                    id: `cg${createdGates}`,
-                    definition: def.json(), // save the whole current circuit instance as def
-                    span: circuit.qubits.length, // it follows that it spans as many qubits as there are currently
-                })
-                .text(symbol || `CG${createdGates}`) // if not given a symbol, fall back to default convention
-                .css('display', 'inline-flex')
-                .append($('<description></description>') // add given or default title and desc only if specified
-                    .html(
-                        `<b>${title}</b>
-                        <br><br>${desc ? `${desc}<br><br>` : ''}
-                        CTRL + Click to reconstruct its circuit definition.
-                        <br><br>SHIFT + Click to delete.`))
-                .on('mousedown', function (e) { copy(this, e, circuit); }) // arm it with drag-and-drop behavior
-                .on('mouseenter', function () { showTooltip(tooltipsAllowed, this, 'left', 0, +10); }) // spawn tooltip on hover
-                .on('mouseleave', () => { if (tooltipsAllowed) $('tooltip').remove(); })
-                .on('click', function (e) { // on SHIFT + Click, remove this custom gate from the toolbox
-                    if (e.button !== 0 || !e.shiftKey || e.ctrlKey || e.altKey) return;
-
-                    // simply hide it from the DOM, as it might be used in previous templates
-                    // TODO: this is probably not an amazing solution
-                    $(this).trigger('mouseleave').css('display', 'none');
-                })
-                .on('click', function(e) { // on CTRL + Click, rebuild its circuit definition in a new tab
-                    if (e.button !== 0 || e.shiftKey || !e.ctrlKey || e.altKey) return;
-
-                    new Tab(tabs, circuit, def).title = title;
-                    // wipe carry-over stacks, this is supposed to be the initial state
-                    circuit.undoStack = [];
-                    circuit.redoStack = [];
-                    circuit.toggleButtons();
-                }));
-        
+        .on('click', () => {            
+            createCustomGate(
+                circuit, tabs, customs, 
+                ++createdGates, 
+                ($('#symbol').val() as string).trim(), 
+                ($('#title').val() as string).trim()  || `Custom Gate #${createdGates}`, 
+                $('#desc').val(), 
+                new Template(circuit, { minQubits: false, states: false, aliases: false, colors: false, stacks: false}).json(), 
+                circuit.qubits.length, 
+                tooltipsAllowed
+            );            
+            // save new page instance
+            $('#save-page').trigger('click');
+            // close gate builder
             $('#close-gatebuilder').trigger('click');
         });
 

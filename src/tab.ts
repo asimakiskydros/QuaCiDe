@@ -1,5 +1,6 @@
 import { Circuit } from './circuit';
 import { Template } from './template';
+import { DELIMITER } from './functions';
 
 let createdTabs = 0;
 
@@ -66,5 +67,13 @@ export class Tab {
 
     public set title (title: string) {
         if (title) this.tablink.find('input').val(title);
+    }
+
+    /**
+     * Extracts a JSON save of this current `Tab` instance.
+     * @returns A JSON string holding the title, activity and circuit instance.
+     */
+    public save () {
+        return `${this.title}${DELIMITER}${this.hidden}${DELIMITER}${this.snapshot.json()}`;
     }
 }

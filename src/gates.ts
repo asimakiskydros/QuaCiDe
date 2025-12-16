@@ -1,9 +1,7 @@
 import { Circuit } from "./circuit";
 import { Qubit } from "./qubit";
 import { Template } from "./template";
-import { calculate } from "./functions";
-
-const DELIMITER: string = '<!@DELIMITER>';
+import { calculate, devtoolPrint, DELIMITER } from "./functions";
 
 /**
  * Generic Gate definition.
@@ -276,9 +274,9 @@ export class Gate {
             'h': HGate,
             's': SGate,
             't': TGate,
-            'powered-x': PoweredXGate,
-            'powered-y': PoweredYGate,
-            'powered-z': PoweredZGate,
+            'rx': RXGate,
+            'ry': RYGate,
+            'rz': RZGate,
         };
 
         // if a custom instance of an existing gate element then return custom
@@ -286,9 +284,9 @@ export class Gate {
 
         const gate = new DEFAULTS[id](parent);
 
-        if (extra && gate instanceof PoweredGate)
-            // carry over the exponent if the original had one
-            (gate as PoweredGate).powerBox.value = extra;
+        if (extra && gate instanceof RotationalGate)
+            // carry over the angle if the original had one
+            (gate as RotationalGate).angleBox.value = extra;
 
         if (extra && gate instanceof Measurement) {
             // remember postselection mode
@@ -324,21 +322,21 @@ class TexturedGate extends Gate {
 }
 
 /**
- * Powered Gates include input boxes that should be dealt with differently.
+ * Rotational Gates include input boxes that should be dealt with differently.
  */
-export class PoweredGate extends Gate {
-    public readonly powerBox: HTMLInputElement; // HTML input box element for the exponents
+export class RotationalGate extends Gate {
+    public readonly angleBox: HTMLInputElement; // HTML input box element for the angle
 
     constructor (template: HTMLElement, circuit: Circuit) {
         super(template, circuit);
-        this.powerBox = $(this.body).find('.power')
+        this.angleBox = $(this.body).find('.rotangle')
             .css('pointer-events', 'auto')
             .get(0) as HTMLInputElement;
 
         Gate.generics++;
 
-        $(this.powerBox).on('input', () => {
-            // re-validate this gate when its exponent changes
+        $(this.angleBox).on('input', () => {
+            // re-validate this gate when its angle changes
             this.unerror();
             this.validate();
             // toggle buttons again based on new context
@@ -348,23 +346,23 @@ export class PoweredGate extends Gate {
 
     /**
      * JSON-parsable description of `this` gate.
-     * Includes the `type` of the `Gate` and its current `exponent`, seperated
+     * Includes the `type` of the `Gate` and its current `angle`, seperated
      * by a delimiter.
      */
     public override get stamp (): string {
-        return `${this.type}${DELIMITER}${this.powerBox.value}`;
+        return `${this.type}${DELIMITER}${this.angleBox.value}`;
     }
 
     /**
-     * Overloaded validate version. Non-numerical exponents is also an error for `PoweredGate` objects.
+     * Overloaded validate version. Non-numerical angles is also an error for `RotationalGate` objects.
      *  Checks this case too after the generic one.
      */
     public override validate (): void {
         // check the generic case first
         super.validate();
-        // test the given exponent. If NaN, error.
-        if (Number.isNaN(calculate(this.powerBox.value))) 
-            this.error('Invalid exponent.'); 
+        // test the given angle. If NaN, error.
+        if (Number.isNaN(calculate(this.angleBox.value))) 
+            this.error('Invalid angle.'); 
     }
 
     public override erase (): void {
@@ -816,28 +814,28 @@ export class TGate extends Gate {
 }
 
 /**
- * Exponential version of the Pauli X Gate.
+ * Generalized version of the Pauli X gate.
  */
-export class PoweredXGate extends PoweredGate {
+export class RXGate extends RotationalGate {
     constructor (circuit: Circuit) {
-        super($('#powered-x').get(0)!, circuit);
+        super($('#rx').get(0)!, circuit);
     }
 }
 
 /**
- * Exponential version of the Pauli Y Gate.
+ * Generalized version of the Pauli Y gate.
  */
-export class PoweredYGate extends PoweredGate {
+export class RYGate extends RotationalGate {
     constructor (circuit: Circuit) {
-        super($('#powered-y').get(0)!, circuit);
+        super($('#ry').get(0)!, circuit);
     }
 }
 
 /**
- * Exponential version of the Pauli Z Gate. Also known as the Global Phase Gate.
+ * Generalized version of the Pauli Z gate.
  */
-export class PoweredZGate extends PoweredGate {
+export class RZGate extends RotationalGate {
     constructor (circuit: Circuit) {
-        super($('#powered-z').get(0)!, circuit);
+        super($('#rz').get(0)!, circuit);
     }
 }
