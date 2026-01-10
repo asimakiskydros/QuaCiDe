@@ -1,10 +1,10 @@
 import { Circuit } from './circuit';
-import { copy, createCustomGate, DELIMITER, devtoolPrint, payload, plot, showTooltip } from './functions';
+import { compile2qole, copy, createCustomGate, DELIMITER, devtoolPrint, payload, plot, showTooltip } from './functions';
 import { Qubit } from './qubit';
 import { Tab } from './tab';
 import { Template } from './template';
 
-const FORGET_AFTER = 12 * 60 * 60  * 1000; // 12 hours
+const FORGET_AFTER = 0;//12 * 60 * 60  * 1000; // 12 hours
 
 $(() => { // on DOMContentLoaded
     const last: Record<string, Template> = {};                       // record of the last instance calculated on each output so as to avoid recalculation 
@@ -384,6 +384,11 @@ $(() => { // on DOMContentLoaded
         });
 
     /**
+     * On selecting a new backend option, scan the current circuit for any unsupported `Gate` instance.
+     */
+    $('#backend').on('change', () => { circuit.validate(); });
+
+    /**
      * For every specified output option, reveal the corresponding output
      * panel on click, and hide it instead if already summoned.
      */
@@ -412,25 +417,42 @@ $(() => { // on DOMContentLoaded
             last[output] = current;
             $(document.body).css('cursor', 'wait');
 
-            // send circuit instance to backend and plot results
-            $.ajax({
-                url: `${SERVER_IP}/parser`,
-                method: 'POST',
-                contentType: 'application/json',
-                data: payload(output, circuit),
-                success: (response: any) => {
-                    plot(output, response)
-                
-                    setTimeout(() => {
-                        // summon the output panel
-                        panel.removeClass('slide-out').addClass('slide-in');
-                        $(this).addClass('active');
-                    }, 100); },
-                error: (xhr, status, error) => {
-                    alert('An unexpected error has occurred. Try again later.'); },
-                complete: () => { 
-                    $(document.body).css('cursor', 'default'); }
-            });
+            if ($('#backend').val() === 'qole')
+            {
+                plot(output, compile2qole(circuit));
+            
+                setTimeout(() => {
+                    // summon the output panel
+                    panel.removeClass('slide-out').addClass('slide-in');
+                    $(this).addClass('active');
+                    $(document.body).css('cursor', 'default');
+                }, 100);                
+            }
+            else if ($('#backend').val() === 'qiskit-aer')
+                // send circuit instance to backend and plot results
+                $.ajax({
+                    url: `${SERVER_IP}/parser`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: payload(output, circuit),
+                    success: (response: any) => {
+                        plot(output, response)
+                    
+                        setTimeout(() => {
+                            // summon the output panel
+                            panel.removeClass('slide-out').addClass('slide-in');
+                            $(this).addClass('active');
+                        }, 100); },
+                    error: (xhr, status, error) => {
+                        alert('An unexpected error has occurred. Try again later.'); },
+                    complete: () => { 
+                        $(document.body).css('cursor', 'default'); }
+                });
+            else
+            {
+                $(document.body).css('cursor', 'default');
+                alert(`Passed backend option not supported (received ${$('backend').val()}).`);
+            }
         });
 
     /**

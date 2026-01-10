@@ -1,4 +1,4 @@
-import { Control, Gate, InertiaGate, Measurement, Support, SWAPGate } from "./gates";
+import { Control, Gate, I, Measurement, Support, SWAP } from "./gates";
 import { Qubit } from "./qubit";
 import { Template } from "./template";
 
@@ -36,7 +36,7 @@ export class Circuit {
     /**
      * Counts and returns the number of active steps.
      */
-    private get columns (): number {
+    public get columns (): number {
         return this.qubits.length > 0 ? Math.max(...this.qubits.map(qubit => qubit.gates.length)) : 0;
     }
 
@@ -193,13 +193,13 @@ export class Circuit {
         // by spawning a pillar of identites. If not, fill the column with identities in void places only.
         for (const qubit of this.qubits) 
             if (!Number.isInteger(position) || !qubit.gate(col))
-                qubit.attach(new InertiaGate(this), col);
+                qubit.attach(new I(this), col);
         // add the gate, replacing the existing one on the calculated position only
         // if it is an identity
         this.qubits[row].attach(
             gate, 
             col, 
-            this.qubits[row].gate(col) instanceof InertiaGate
+            this.qubits[row].gate(col) instanceof I
         );
         // spawn support gates underneath it in case it has span
         for (let i = 1; i < gate.span; i++) {
@@ -257,7 +257,7 @@ export class Circuit {
 
                 const other = this.qubits[i].gate(index);
                 // ignore invisible gates
-                if (other && !(other instanceof InertiaGate || other instanceof Support)) 
+                if (other && !(other instanceof I || other instanceof Support)) 
                     shadows = true;
             }
 
@@ -269,7 +269,7 @@ export class Circuit {
             offset < (index + 0.5) * STEP_SIZE || 
             shadows || (                                    // OR 2. the hovered gate shadows over existing gates in this step
                 resident && !(                              // OR 3. the existing gate in this position:
-                    resident instanceof InertiaGate      || // is not an identity
+                    resident instanceof I      || // is not an identity
                     resident.type.includes(gate.body.id) || // neither is a support gate of the hovered gate
                     resident === gate                       // nor is it the hovered gate itself
                 ))
@@ -357,9 +357,9 @@ export class Circuit {
                     continue;
                 else if (gate instanceof Control)
                     controls.push(i);
-                else if (!(gate instanceof Measurement || gate instanceof InertiaGate))
+                else if (!(gate instanceof Measurement || gate instanceof I))
                     generics.push(i);
-                if (gate instanceof SWAPGate) 
+                if (gate instanceof SWAP) 
                     swaps.push(i);
             }
             // for every control in the column, spawn connectors from it to the last generic in both directions
@@ -478,11 +478,11 @@ export class Circuit {
                 const gate = qubit.gate(col);
 
                 // validate SWAPs on this step only once (one call validates all)
-                if (gate instanceof SWAPGate && doneSwap) continue;
+                if (gate instanceof SWAP && doneSwap) continue;
 
                 gate?.validate();
 
-                doneSwap = doneSwap || gate instanceof SWAPGate;
+                doneSwap = doneSwap || gate instanceof SWAP;
             }
         }
         // enable/disable buttons based on context
@@ -499,7 +499,7 @@ export class Circuit {
             let empty = true;
             for (const qubit of this.qubits)
                 if (col < qubit.gates.length) 
-                    empty = empty && (qubit.gates[col] instanceof InertiaGate);
+                    empty = empty && (qubit.gates[col] instanceof I);
             
             // if empty, remove all its gates
             if (empty) 

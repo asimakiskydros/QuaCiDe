@@ -1,4 +1,4 @@
-import { Gate, InertiaGate, Measurement } from "./gates";
+import { Gate, I, Measurement } from "./gates";
 import { Circuit, STEP_SIZE } from "./circuit";
 
 /**
@@ -82,7 +82,7 @@ export class Qubit {
 
         // if asked for more than 0 starting inertias, attempt to place an inertia at 
         // position `startingInertias - 1`. `attach` will fill the rest of the gate train.
-        if (startingInertias) this.attach(new InertiaGate(this.parent), startingInertias - 1);
+        if (startingInertias) this.attach(new I(this.parent), startingInertias - 1);
     }
 
     /**
@@ -92,7 +92,7 @@ export class Qubit {
     public get empty (): boolean {
         return (
             this.gates.length < 1 ||
-            this.gates.every(gate => gate instanceof InertiaGate));
+            this.gates.every(gate => gate instanceof I));
     }
 
     /**
@@ -303,7 +303,7 @@ export class Qubit {
         if (!override)
             // pad with inertia gates till length reaches the position
             while (position > this.gates.length) {
-                const padding = new InertiaGate(this.parent);
+                const padding = new I(this.parent);
                 padding.owner = this;
                 this.gates.splice(position, 0, padding);
             }
@@ -331,8 +331,8 @@ export class Qubit {
 
         // if it wasnt an inertia gate, leave one behind for integrity
         // if it turns out to be unnecessary it will be discarded by refresh
-        if (!(gate instanceof InertiaGate)) {
-            const  remnant = new InertiaGate(this.parent);
+        if (!(gate instanceof I)) {
+            const  remnant = new I(this.parent);
             remnant.owner = this;
             this.gates.splice(position, 0, remnant);
         }

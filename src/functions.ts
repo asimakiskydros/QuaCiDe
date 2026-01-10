@@ -1,9 +1,10 @@
 import { Qubit } from './qubit';
 import { Circuit } from './circuit';
 import { Template } from './template';
-import { Gate } from './gates';
+import { Control, Custom, Gate, Support } from './gates';
 import { Tab } from './tab';
-
+import { QuantumCircuit } from '../node_modules/qole/dist/circuit';
+import { QuantumGate, IGate, XGate, YGate, ZGate, SGate, TGate, HGate } from '../node_modules/qole/dist/gates';
 
 export const DELIMITER: string = '<!@DELIMITER>';
 
@@ -357,4 +358,144 @@ export function createCustomGate (
     customs[prefixid] = [id, symbol, title, desc, definition, span].join(DELIMITER);
     
     return gate;
+}
+
+/**
+ * Transpiles the given `Circuit` instance into a QOLE-friendly flattened stamp matrix where each row is a circuit
+ * qubit and the gates are placed into the columns they are found in the `Circuit`. Existing `Custom` gates
+ * inside this `Circuit` must already have been defined and hold a proper `flattened` property initialized 
+ * using this very same function.
+ * @param circuit The `Circuit` instance to transpile.
+ * @returns A matrix of `Gate` stamps.
+ */
+export function transpile2qole (circuit: Circuit)
+{
+    const flattened: string[][] = Array.from(circuit.qubits, qubit => []);
+    const columns = circuit.columns;
+    
+    // prepares the gate circuit definition as a stamp matrix for easy compilation into QOLE
+    for (let col = 0; col < columns; col++)
+    {
+        const controls = new Map<number, Gate>();
+        const customs  = [];
+
+        for (const [i, qubit] of circuit.qubits.entries())
+        {
+            if (qubit.gate(col) instanceof Control)
+                controls.set(i, qubit.gate(col)!);
+            else if (qubit.gate(col) instanceof Custom)
+                customs.push({ gate: (qubit.gate(col)! as Custom), index: i });
+
+            // dummy inertias to maintain alignment
+            if (qubit.gate(col) === null || qubit.gate(col) instanceof Support || qubit.gate(col) instanceof Custom)
+                flattened[i].push('inertia');
+            else
+            // place the correct gate stamp
+                flattened[i].push(qubit.gate(col)!.stamp);
+
+            for (const { gate, index } of customs)
+            {
+                // the number of columns in the custom flattened matrix (max length row)
+                const customCols = Math.max(...Array.from(gate.flattened, row => row.length));
+
+                for (let row = 0; row < flattened.length;)
+                    // when met with the position of the custom gate, repeat its flattened matrix
+                    if (row === index)
+                        for (const customRow of gate.flattened)
+                            flattened[row++].push(...customRow);
+                    else
+                    // for other positions, repeat controls but otherwise fill in dummy inertias to maintain alignment
+                        flattened[row++].push(...Array(customCols).fill(
+                            controls.has(row) ? controls.get(row)!.stamp : 'inertia'));
+            }
+        }
+    }
+    return flattened;
+}
+
+/**
+ * Translates the current circuit instance into a QOLE `QuantumCircuit` object, then
+ * samples it for the current number of `shots` and returns `counts`, `amps` results.
+ * @param circuit The current `Circuit` instance.
+ * @returns An array holding `count` information and another holding `amps` information, in that order,
+ * prepared in expected `plot` format.
+ */
+export function compile2qole (circuit: Circuit)
+{
+    const qc = new QuantumCircuit(circuit.qubits.length);
+    const flattened = transpile2qole(circuit);
+    const columns = circuit.columns;
+    const measurements: number[] = [];
+    const QOLE_GATE: Record<string, new (input?: any) => QuantumGate> = {
+        'inertia': IGate,
+        'x':  XGate,
+        'y':  YGate,
+        'z':  ZGate,
+        'h':  HGate,
+        's':  SGate,
+        't':  TGate,
+    };
+
+    for (let col = 0; col < columns; col++)
+    {
+        const states:   string[] = [];
+        const controls: number[] = [];
+        const targets:  number[] = [];
+        const swaps:    number[] = [];
+        const operations: QuantumGate[] = [];
+
+        for (let row = 0; row < flattened.length; row++)
+        {            
+            const [type, input] = flattened[row][col].split(DELIMITER);
+            switch (type)
+            {
+                case 'supp': 
+                    break;  // ignore
+                case 'inertia': 
+                    break;  // ignore
+                case 'measurement': 
+                    measurements.push(row); break;
+                case 'swap':
+                    swaps.push(row); break;
+                case 'control':
+                    controls.push(row); states.push(input); break;
+                default:  // target
+                    operations.push(new QOLE_GATE[type](
+                        ['rx', 'ry', 'rz'].includes(type) ? Number(input) : false));  // TODO: when daggers are implemented, this false will need to become a dynamic boolean    
+                    targets.push(row); 
+            }
+        }
+        if (swaps.length === 2)
+        {
+            const extendedControls = [swaps[1], ...controls];
+            const ctrlState = [1, ...states].join("");
+            // build SWAP decomposition (CNOT[0;1]CNOT[1;0]CNOT[0;1]), carrying over the global column controls
+            qc.mcx(extendedControls,        swaps[0], ctrlState);
+            qc.mcx([swaps[0], ...controls], swaps[1], ctrlState);
+            qc.mcx(extendedControls,        swaps[0], ctrlState);
+        }
+        else if (swaps.length !== 0)
+            throw new Error(`Found unpaired SWAPs during compilation to QOLE (${swaps.length} SWAP elements given).`);
+
+        qc.append(operations, targets, controls, states.join(""));
+    }
+
+    const data: Map<string, {counts: number, real: number, imag: number }> = new Map();
+    // 1. execute the circuit, measuring all qubits indiscriminately
+    for (const [state, { occurrences, re, im }] of qc.sample(circuit.shots))
+    {
+        // 2. then filter
+        // shorten counts to user-defined qubit indices only
+        const meas = measurements.map(i => state[i]).join("");
+        // merge identical measurements after collapse
+        if (!data.has(meas)) data.set(meas, { counts: occurrences, real: re, imag: im });
+        else data.set(meas, { 
+            counts: data.get(meas)!.counts + occurrences, 
+            real:   data.get(meas)!.real + re,
+            imag:   data.get(meas)!.imag + im });
+    }
+    return [  // prepare in expected plot format
+        Array.from(data, ([state, { counts }]) => ({ state, counts })),
+        Array.from(data, ([state, { real, imag }]) => ({ state, real, imag }))
+    ];
 }

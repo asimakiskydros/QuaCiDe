@@ -1,7 +1,7 @@
 import { Circuit } from "./circuit";
 import { Qubit } from "./qubit";
 import { Template } from "./template";
-import { calculate, devtoolPrint, DELIMITER } from "./functions";
+import { calculate, devtoolPrint, DELIMITER, transpile2qole } from "./functions";
 
 /**
  * Generic Gate definition.
@@ -73,7 +73,7 @@ export class Gate {
                     // move every existing non-trivial gate (occupant) span positions downward, from the bottom up
                     const other = this.circuit.qubit(i)!;
                     const occupant = other.gate(step);
-                    if (occupant && !(occupant instanceof InertiaGate || occupant instanceof Support)) {
+                    if (occupant && !(occupant instanceof I || occupant instanceof Support)) {
                         this.circuit.detach(occupant);
                         this.circuit.attach(occupant, i + this.span, step);
                     }
@@ -266,17 +266,17 @@ export class Gate {
         const DEFAULTS: Record<string, new (parent: Circuit) => Gate> = {
             'measurement': Measurement,
             'control': Control,
-            'inertia': InertiaGate,
-            'swap': SWAPGate,
-            'x': XGate,
-            'y': YGate,
-            'z': ZGate,
-            'h': HGate,
-            's': SGate,
-            't': TGate,
-            'rx': RXGate,
-            'ry': RYGate,
-            'rz': RZGate,
+            'inertia': I,
+            'swap': SWAP,
+            'x': X,
+            'y': Y,
+            'z': Z,
+            'h': H,
+            's': S,
+            't': T,
+            'rx': RX,
+            'ry': RY,
+            'rz': RZ,
         };
 
         // if a custom instance of an existing gate element then return custom
@@ -360,8 +360,10 @@ export class RotationalGate extends Gate {
     public override validate (): void {
         // check the generic case first
         super.validate();
+        if ($('#backend').val() === 'qole')
+            this.error('This gate is currently unsupported by the selected backend.')
         // test the given angle. If NaN, error.
-        if (Number.isNaN(calculate(this.angleBox.value))) 
+        else if (Number.isNaN(calculate(this.angleBox.value))) 
             this.error('Invalid angle.'); 
     }
 
@@ -512,6 +514,8 @@ export class Control extends TexturedGate {
  * to a loaded HTMLElement, otherwise this throws.
  */
 export class Custom extends Gate {
+    public flattened: string[][];
+
     constructor (HTMLid: string, circuit: Circuit) {
         const template = $(`#${HTMLid}`).get(0)!;
         const span = parseInt($(template).attr('span')!);
@@ -521,6 +525,8 @@ export class Custom extends Gate {
         $(this.body).css('display', 'inline-flex');
         
         Gate.generics++;
+
+        this.flattened = transpile2qole(circuit);
     }
 
     public erase (): void {
@@ -551,7 +557,7 @@ export class Support extends Gate {
  * They are usually not represented graphically, but when they are,
  * they appear as a normal gate with a 'I' label.
  */
-export class InertiaGate extends Gate {
+export class I extends Gate {
     constructor (circuit: Circuit) {
         super($('#inertia').get(0)!, circuit);
 
@@ -583,7 +589,7 @@ export class InertiaGate extends Gate {
  * 
  * Graphically, they are represented as two crosses connected by a vertical line.
  */
-export class SWAPGate extends TexturedGate {
+export class SWAP extends TexturedGate {
     constructor (circuit: Circuit) {
         super($('#swap').get(0)!, circuit);
 
@@ -604,12 +610,12 @@ export class SWAPGate extends TexturedGate {
 
         // argsearch this gate to find the #col
         const col = this.owner?.find(this) as number;
-        const swaps: SWAPGate[] = [];
+        const swaps: SWAP[] = [];
 
         // collect all swaps found in this column
         for (const qubit of this.circuit.qubits)
-            if (qubit.gate(col) instanceof SWAPGate)
-                swaps.push(qubit.gate(col) as SWAPGate);
+            if (qubit.gate(col) instanceof SWAP)
+                swaps.push(qubit.gate(col) as SWAP);
         
         // if more than two, error *all* of them, with the appropriate message
         if (swaps.length !== 2)
@@ -644,7 +650,7 @@ export class SWAPGate extends TexturedGate {
 /**
  * X Pauli Gates, or NOT gates, flip the qubit state on the x-axis in the Bloch Sphere.
  */
-export class XGate extends TexturedGate {
+export class X extends TexturedGate {
     private target: boolean;
 
     constructor (circuit: Circuit) {
@@ -698,7 +704,7 @@ export class XGate extends TexturedGate {
 /**
  * Z Pauli Gates flip the qubit state on the z-axis in the Bloch Sphere.
  */
-export class ZGate extends TexturedGate {
+export class Z extends TexturedGate {
     private dot: boolean;
 
     constructor (circuit: Circuit) {
@@ -752,7 +758,7 @@ export class ZGate extends TexturedGate {
 /**
  * Y Pauli Gates flip the Qubit state on the y-axis in the Bloch Sphere.
  */
-export class YGate extends Gate {
+export class Y extends Gate {
     constructor (circuit: Circuit) {
         super($('#y').get(0)!, circuit);
 
@@ -768,7 +774,7 @@ export class YGate extends Gate {
 /**
  * Hadamard Gates map basis states to ther corresponding superpositions and back.
  */
-export class HGate extends Gate {
+export class H extends Gate {
     constructor (circuit: Circuit) {
         super($('#h').get(0)!, circuit);
 
@@ -784,7 +790,7 @@ export class HGate extends Gate {
 /**
  * S Gates change the phase of the qubit state by a quadrant.
  */
-export class SGate extends Gate {
+export class S extends Gate {
     constructor (circuit: Circuit) {
         super($('#s').get(0)!, circuit);
 
@@ -800,7 +806,7 @@ export class SGate extends Gate {
 /**
  * T Gates change the phase of the qubit state by half a quadrant.
  */
-export class TGate extends Gate {
+export class T extends Gate {
     constructor (circuit: Circuit) {
         super($('#t').get(0)!, circuit);
 
@@ -816,7 +822,7 @@ export class TGate extends Gate {
 /**
  * Generalized version of the Pauli X gate.
  */
-export class RXGate extends RotationalGate {
+export class RX extends RotationalGate {
     constructor (circuit: Circuit) {
         super($('#rx').get(0)!, circuit);
     }
@@ -825,7 +831,7 @@ export class RXGate extends RotationalGate {
 /**
  * Generalized version of the Pauli Y gate.
  */
-export class RYGate extends RotationalGate {
+export class RY extends RotationalGate {
     constructor (circuit: Circuit) {
         super($('#ry').get(0)!, circuit);
     }
@@ -834,7 +840,7 @@ export class RYGate extends RotationalGate {
 /**
  * Generalized version of the Pauli Z gate.
  */
-export class RZGate extends RotationalGate {
+export class RZ extends RotationalGate {
     constructor (circuit: Circuit) {
         super($('#rz').get(0)!, circuit);
     }
