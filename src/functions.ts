@@ -494,7 +494,7 @@ export function compile2qole (circuit: Circuit)
             real:   data.get(meas)!.real + re,
             imag:   data.get(meas)!.imag + im });
     }
-    return [  // prepare in expected plot format
+    return [
         Array.from(data, ([state, { counts }]) => ({ state, counts })),
         Array.from(data, ([state, { real, imag }]) => ({ state, real, imag }))
     ];

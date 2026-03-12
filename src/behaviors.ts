@@ -4,8 +4,9 @@ import { Qubit } from './qubit';
 import { Tab } from './tab';
 import { Template } from './template';
 
-const FORGET_AFTER = 0;//12 * 60 * 60  * 1000; // 12 hours
-
+const FORGET_AFTER = 5000;                 // 12 * 60 * 60 * 1000; // 12 hours
+const SERVER_IP = 'http://127.0.0.1:5000'; // the host 
+    
 $(() => { // on DOMContentLoaded
     const last: Record<string, Template> = {};                       // record of the last instance calculated on each output so as to avoid recalculation 
     const circuit = new Circuit();                                   // the master circuit object
@@ -13,52 +14,8 @@ $(() => { // on DOMContentLoaded
     const initialSnapshot = new Template(circuit);                   // the initial snapshot, armed with empty undo/redo stacks, useful for tab initialization
     const tabs: Tab[] = [];                                          // the tab list; the tab ribbon
     const customs: Record<string, string> = {};                      // custom gate descriptions list
-    const SERVER_IP = 'http://127.0.0.1:5000';                       // the host 
     let tooltipsAllowed = true;                                      // settings flag for tooltips
     let createdGates = 0;
-
-    /**
-     * On page reload, first check whether there exists a prior page save to fall back to.
-     */
-    const timestamp = localStorage.getItem('timestamp');
-    if (timestamp !== null)
-        if (Date.now() > FORGET_AFTER + Number(timestamp)) {
-            // exists but expired, discard and load the default start page
-            localStorage.removeItem('save');
-            localStorage.removeItem('timestamp');
-            $('#include-tab').trigger('click');
-        }
-        else {
-            // exists and eligible to reload
-            const save = JSON.parse(localStorage.getItem('save')!);
-            let active = 0;
-
-            // re-instate previously applied global settings
-            createdGates = save['createdgates'];
-            tooltipsAllowed = save['tooltips'];
-            $('#backend').val(save['backend']);
-
-            if ($('#theme').find('span').text() !== save['theme']) $('#theme').trigger('click');
-            if ($('#hidden-inertias').find('span').text() !== save['inertias']) $('#hidden-inertias').trigger('click');
-            if ($('#imaginary-unit').find('span').text() !== save['imagunit']) $('#imaginary-unit').trigger('click');
-
-            // revive all tabs
-            for (const [i, tab] of save['tabsaves'].entries()) {
-                const [title, hidden, snapshot] = tab.split(DELIMITER);
-                new Tab(tabs, circuit, new Template(undefined, undefined, JSON.parse(snapshot))).title=title;
-                if (hidden) active = i;
-            }
-            // focus on the previously active tab
-            tabs[active].tablink.trigger('click');
-
-            // revive all custom gates
-            for (const gate of save['customsaves']) {
-                const [id, symbol, title, desc, definition, span] = gate.split(DELIMITER);
-
-                createCustomGate(circuit, tabs, customs, id, symbol, title ,desc, definition, span, tooltipsAllowed);
-            }
-        }
-    else $('#include-tab').trigger('click')
 
     /**
      * On click, save all non-trivial page content (the selected backend, all vital tab information and all custom gate definitions)
@@ -81,11 +38,12 @@ $(() => { // on DOMContentLoaded
     /**
      * On click, spawn a fresh tab in the ribbon right before the include button.
      */
-    $('#include-tab').on('click', () => { 
-        new Tab(tabs, circuit, initialSnapshot); 
-        // save new page instance
-        $('#save-page').trigger('click');
-    }); 
+    $('#include-tab')
+        .on('click', () => { 
+            new Tab(tabs, circuit, initialSnapshot); 
+            // save new page instance
+            $('#save-page').trigger('click');
+        });
     
     /**
      * On click, remove everything currently in the circuit and bring it back to
@@ -553,4 +511,47 @@ $(() => { // on DOMContentLoaded
                 return;
         }
     });
+
+    /**
+     * On page reload, first check whether there exists a prior page save to fall back to.
+     */
+    const timestamp = localStorage.getItem('timestamp');
+    if (timestamp !== null)
+        if (Date.now() > FORGET_AFTER + Number(timestamp)) {
+            // exists but expired, discard and load the default start page
+            localStorage.removeItem('save');
+            localStorage.removeItem('timestamp');
+            $('#include-tab').trigger('click');
+        }
+        else {
+            // exists and eligible to reload
+            const save = JSON.parse(localStorage.getItem('save')!);
+            let active = 0;
+
+            // re-instate previously applied global settings
+            createdGates = save['createdgates'];
+            tooltipsAllowed = save['tooltips'];
+            $('#backend').val(save['backend']);
+
+            if ($('#theme').find('span').text() !== save['theme']) $('#theme').trigger('click');
+            if ($('#hidden-inertias').find('span').text() !== save['inertias']) $('#hidden-inertias').trigger('click');
+            if ($('#imaginary-unit').find('span').text() !== save['imagunit']) $('#imaginary-unit').trigger('click');
+
+            // revive all custom gates
+            for (const gate of save['customsaves']) {
+                const [id, symbol, title, desc, definition, span] = gate.split(DELIMITER);
+
+                createCustomGate(circuit, tabs, customs, id, symbol, title ,desc, definition, span, tooltipsAllowed);
+            }
+
+            // revive all tabs
+            for (const [i, tab] of save['tabsaves'].entries()) {
+                const [title, hidden, snapshot] = tab.split(DELIMITER);
+                new Tab(tabs, circuit, new Template(undefined, undefined, JSON.parse(snapshot))).title=title;
+                if (hidden === 'false') active = i;
+            }
+            // focus on the previously active tab
+            tabs[active].tablink.trigger('click');
+        }
+    else $('#include-tab').trigger('click')
 });
