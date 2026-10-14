@@ -18,7 +18,7 @@
     "dependencies": {
         "@types/plotly.js": "^2.33.4",
         "jquery": "^3.7.1",
-        "plotly.js": "^2.35.2"
+        "plotly.js": "^4.1.2"
     },
     "author": "Asimakis Kydros",
     "repository": {
